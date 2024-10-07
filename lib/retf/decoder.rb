@@ -6,35 +6,21 @@ require 'stringio'
 module Retf
   class Decoder # :nodoc:
     def initialize(data)
-      @data = data.to_s
-      @idx = 0
+      @data = StringIO.new(data).binmode
     end
 
     def decode(skip_version_check: false)
-      @idx = 0
-
-      if skip_version_check
-        raise ArgumentError, 'malformed ETF' unless @data.getbyte(@idx) == 131
-
-        @idx += 1
-      end
-
-      tag = @data.getbyte(@idx)
-
-      # if the tag is 80, then the data is compressed
-      if tag == 80
-        @idx += 1
-        decompress_data
-      end
+      raise ArgumentError, 'malformed ETF' if !skip_version_check && @data.getbyte != 131
 
       decode_term
     end
 
     def decode_term
-      @idx += 1
+      tag = @data.getbyte
 
       # check the tag to get the type of the term
-      case @data.getbyte(@idx - 1)
+      case tag
+      when 80 then decompress_data
       when 97 then decode_byte
       when 98 then decode_int
       when 88 then decode_pid
@@ -53,57 +39,55 @@ module Retf
       when 118, 100 then decode_atom
       when 119, 115 then decode_small_atom
       else
-        raise ArgumentError, "unknown tag: #{@data[@idx - 1]}"
+        raise ArgumentError, "unknown or unimplemented tag: #{tag}"
       end
     end
 
     private
 
     def decompress_data
-      uncompressed_size = @data[@idx..@idx + 3].unpack1('N')
-      @idx += 4
-
-      compressed_data = @data[@idx..]
-      @data = Zlib::Inflate.inflate(compressed_data)
+      uncompressed_size = @data.read(4).unpack1('N')
+      compressed_data = @data.read
+      str = Zlib::Inflate.inflate(compressed_data)
 
       raise ArgumentError, 'decompressed data is not the expected size' unless @data.size == uncompressed_size
+
+      @data = StringIO.new(str).binmode
+      decode_term
     end
 
     def decode_byte
-      result = @data[@idx].unpack1('C')
-      @idx += 1
-      result
+      @data.getc.unpack1('C')
     end
 
     def decode_int
-      result = @data[@idx..@idx + 3].unpack1('N')
-      @idx += 4
-      result
+      @data.read(4).unpack1('N')
     end
 
     def decode_short_int
-      result = @data[@idx..@idx + 1].unpack1('n')
-      @idx += 2
-      result
+      @data.read(2).unpack1('n')
     end
 
     def decode_float
-      result = @data[@idx..@idx + 7].unpack1('G')
-      @idx += 8
-      result
+      @data.read(8).unpack1('G')
     end
 
     def decode_small_atom
       size = decode_byte
-      str = @data[@idx..(@idx + size - 1)].unpack1('a*')
-      @idx += size
-      str.to_sym
+      str = @data.read(size).unpack1('a*')
+
+      case str
+        # special casing for the atoms true, false, and nil
+      when 'true' then true
+      when 'false' then false
+      when 'nil' then nil
+      else str.to_sym
+      end
     end
 
     def decode_atom
       size = decode_short_int
-      str = @data[@idx..(@idx + size - 1)].unpack1('U*')
-      @idx += size
+      str = @data.read(size).unpack1('a*')
 
       case str
       # special casing for the atoms true, false, and nil
@@ -116,15 +100,13 @@ module Retf
 
     def decode_small_tuple
       size = decode_byte
-      result = []
-      size.times { result << decode_term }
+      result = Array.new(size) { decode_term }
       Tuple[*result]
     end
 
     def decode_large_tuple
       size = decode_int
-      result = []
-      size.times { result << decode_term }
+      result = Array.new(size) { decode_term }
       Tuple[*result]
     end
 
@@ -144,9 +126,7 @@ module Retf
 
     def decode_binary
       size = decode_int
-      str = @data[@idx..(@idx + size - 1)].unpack1('a*')
-      @idx += size
-      str
+      @data.read(size).unpack1('a*')
     end
 
     # Even though its called a 'string'
@@ -154,9 +134,7 @@ module Retf
     # but we're decoding it as a Ruby string
     def decode_string
       size = decode_short_int
-      str = @data[@idx..(@idx + size - 1)].unpack1('U*')
-      @idx += size
-      str
+      @data.read(size).unpack1('U*')
     end
 
     def decode_reference
@@ -164,9 +142,8 @@ module Retf
       node = decode_atom
       creation = decode_int
 
-      id = []
-      size.times { id << decode_int }
-      Retf::Reference.new(creation, id, node)
+      id = Array.new(size) { decode_int }
+      Reference.new(creation, id, node)
     end
 
     def decode_pid
@@ -174,15 +151,14 @@ module Retf
       id = decode_int
       serial = decode_int
       creation = decode_int
-      Retf::PID.new(id, serial, creation, node)
+      PID.new(id, serial, creation, node)
     end
 
     def decode_bit_binary
       size = decode_int
       bits = decode_byte
-      str = @data[@idx..(@idx + size - 1)].unpack1('a*')
-      @idx += size
-      Retf::BitBinary.new(str, bits)
+      str = @data.read(size).unpack1('a*')
+      BitBinary.new(str, bits)
     end
 
     def decode_map
@@ -215,12 +191,11 @@ module Retf
     def decode_small_bigint
       size = decode_byte
       sign = decode_byte
-      bytes = @data[@idx..(@idx + size - 1)].unpack1('C*')
-      @idx += size
+      bytes = @data.read(size).unpack1('C*')
 
       num = bytes.reduce(0) { |acc, byte| (acc << 8) | byte }
 
-      num *= -1 unless sign.zero?
+      num = -num unless sign.zero?
 
       num
     end
@@ -228,12 +203,11 @@ module Retf
     def decode_large_bigint
       size = decode_int
       sign = decode_byte
-      bytes = @data[@idx..(@idx + size - 1)].unpack1('C*')
-      @idx += size
+      bytes = @data.read(size).unpack1('C*')
 
       num = bytes.reduce(0) { |acc, byte| (acc << 8) | byte }
 
-      num *= -1 unless sign.zero?
+      num = -num unless sign.zero?
 
       num
     end

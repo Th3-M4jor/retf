@@ -64,7 +64,7 @@ class Integer # :nodoc:
     if self >= 0 && self < 256
       [97, self].pack('CC')
     # signed 32-bit integer
-    elsif self >= Retf::ISIZE_MIN && self <= Retf::ISIZE_MAX
+    elsif self >= ::Retf::ISIZE_MIN && self <= ::Retf::ISIZE_MAX
       [98, self].pack('Cl>')
     else
       large_etf_encode
@@ -121,11 +121,11 @@ end
 
 class String # :nodoc:
   def to_etf
-    if bytesize > Retf::USIZE_MAX
+    if bytesize > ::Retf::USIZE_MAX
       raise ArgumentError, 'string is too large to encode, size must fit in a 32-bit unsigned integer'
     end
 
-    [107, bytesize, self].pack('CNa*')
+    [109, bytesize, self].pack('CNa*')
   end
 end
 
@@ -135,7 +135,7 @@ class Array # :nodoc:
     # which makes it an empty list
     return +'j' if empty?
 
-    if size > Retf::USIZE_MAX
+    if size > ::Retf::USIZE_MAX
       raise ArgumentError,
             'array is too large to encode, size must fit in a 32-bit unsigned integer'
     end
@@ -153,7 +153,7 @@ end
 
 class Hash # :nodoc:
   def to_etf
-    if size > Retf::USIZE_MAX
+    if size > ::Retf::USIZE_MAX
       raise ArgumentError,
             'hash is too large to encode, size must fit in a 32-bit unsigned integer'
     end

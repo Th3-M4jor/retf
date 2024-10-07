@@ -1,5 +1,13 @@
 # frozen_string_literal: true
 
+require_relative 'retf/bit_binary'
+require_relative 'retf/decoder'
+require_relative 'retf/encoder'
+require_relative 'retf/encoding'
+require_relative 'retf/pid'
+require_relative 'retf/reference'
+require_relative 'retf/tuple'
+
 # Retf is a pure Ruby library for encoding and decoding
 # Erlang External Term Format (ETF) values.
 #

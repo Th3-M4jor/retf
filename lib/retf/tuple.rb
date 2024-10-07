@@ -19,7 +19,7 @@ module Retf
     end
 
     def initialize(*value)
-      raise ArgumentError, 'size of tuple exceeds 4 byte integer limit' if value.size > Retf::USIZE_MAX
+      raise ArgumentError, 'size of tuple exceeds 4 byte integer limit' if value.size > ::Retf::USIZE_MAX
 
       @value = value.freeze
       @size = value.size
