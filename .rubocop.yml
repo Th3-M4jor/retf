@@ -47,3 +47,6 @@ Metrics/AbcSize:
 
 RSpec/ExampleLength:
   Max: 50
+
+RSpec/SpecFilePathFormat:
+  Enabled: false

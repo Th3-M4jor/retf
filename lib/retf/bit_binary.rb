@@ -7,7 +7,7 @@ module Retf
     attr_reader :binary, :bits_size
 
     def initialize(binary, bits_size)
-      @binary = binary
+      @binary = binary.b
       @bits_size = bits_size
     end
 
@@ -17,13 +17,12 @@ module Retf
 
     def ==(other)
       other.is_a?(BitBinary) &&
-        @bits == other.bits &&
+        @bits_size == other.bits_size &&
         @binary == other.binary
     end
 
     def to_s
-      inspected_bin = @binary.join(', ')
-      "<<#{inspected_bin}, #{@bits}::size(#{@bits_size})>>"
+      "#BitBinary<#{binary.inspect}, #{bits_size}>"
     end
 
     alias inspect to_s

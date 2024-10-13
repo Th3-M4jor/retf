@@ -69,8 +69,13 @@ RSpec.describe String do
 
     # Erlang strings are actually lists of integers
     # 107 is just a special case for these lists
-    encoded = [131, 107, str.bytesize, str].pack('CCNa*')
+    encoded = [131, 107, str.bytesize, str].pack('CCna*')
 
-    expect(Retf.decode(encoded)).to eq str
+    # since we can't be sure what it was actually encoded as
+    # we unpack it to an array of bytes and let the user
+    # decide how to handle it
+    expected = str.unpack('C*')
+
+    expect(Retf.decode(encoded)).to eq expected
   end
 end

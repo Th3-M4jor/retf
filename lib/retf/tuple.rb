@@ -9,7 +9,7 @@ module Retf
   class Tuple
     include Enumerable
 
-    attr_reader :size
+    attr_reader :size, :value
 
     alias length size
     alias count size
@@ -63,9 +63,5 @@ module Retf
     def deconstruct
       value
     end
-
-    private
-
-    attr_reader :value
   end
 end

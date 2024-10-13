@@ -57,6 +57,16 @@ module Retf
       decode_term
     end
 
+    def decode_any_atom
+      tag = @data.getbyte
+      case tag
+      when 118, 100 then decode_atom
+      when 119, 115 then decode_small_atom
+      else
+        raise ArgumentError, "expected an atom tag, got #{tag}"
+      end
+    end
+
     def decode_byte
       @data.getc.unpack1('C')
     end
@@ -150,16 +160,18 @@ module Retf
     end
 
     # Even though its called a 'string'
-    # its actually a list of integers
-    # but we're decoding it as a Ruby string
+    # its actually a list of bytes
+    # we'll decode it as an array
+    # and let the user decide how to
+    # handle it
     def decode_string
       size = decode_short_int
-      @data.read(size).unpack1('U*')
+      @data.read(size).unpack('C*')
     end
 
     def decode_reference
       size = decode_short_int
-      node = decode_atom
+      node = decode_any_atom
       creation = decode_int
 
       id = Array.new(size) { decode_int }
@@ -167,7 +179,7 @@ module Retf
     end
 
     def decode_pid
-      node = decode_atom
+      node = decode_any_atom
       id = decode_int
       serial = decode_int
       creation = decode_int

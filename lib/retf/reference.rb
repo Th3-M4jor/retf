@@ -12,7 +12,7 @@ module Retf
   class Reference
     attr_reader :node, :creation, :id
 
-    def initialize(creation, id, node = nil)
+    def initialize(creation, id, node = :'nonode@nohost')
       @node = node
       @creation = creation
       @id = id

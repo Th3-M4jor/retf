@@ -32,7 +32,7 @@ class Object # :nodoc:
 
     result = as_etf
 
-    raise TypeError, 'expected a Has to be returned' unless result.is_a?(Hash)
+    raise TypeError, 'expected a Hash to be returned (subclasses are not allowed)' unless result.instance_of?(Hash)
 
     result[:__struct__] = self.class
     result.to_etf
@@ -47,19 +47,19 @@ class NilClass # :nodoc:
     # 119 is the SMALL_ATOM_EXT tag
     # 3 is the length of the atom
     # "nil" is string representation of the atom
-    +"w\x03nil"
+    "w\x03nil".b
   end
 end
 
 class FalseClass # :nodoc:
   def to_etf
-    +"w\x05false"
+    "w\x05false".b
   end
 end
 
 class TrueClass # :nodoc:
   def to_etf
-    +"w\x04true"
+    "w\x04true".b
   end
 end
 
@@ -116,7 +116,7 @@ class Float # :nodoc:
   def to_etf
     # ETF specifies that NaN and Infinity are not supported
     # therefore we raise an error if the float is not finite
-    raise TypeError, 'only finite floats are supported' unless finite?
+    raise ArgumentError, 'only floats with a finite value can be encoded' unless finite?
 
     # 70 is the NEW_FLOAT_EXT tag
     # and the float is encoded as a Big Endian 64-bit float

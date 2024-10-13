@@ -34,7 +34,7 @@ module Retf
     alias inspect to_s
 
     def ==(other)
-      other.is_a?(Pid) &&
+      other.is_a?(PID) &&
         @node == other.node &&
         @id == other.id &&
         @serial == other.serial &&
