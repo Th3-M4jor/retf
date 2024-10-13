@@ -20,9 +20,10 @@ module Retf
 
       # check the tag to get the type of the term
       case tag
+      when 70 then decode_float
       when 80 then decompress_data
       when 97 then decode_byte
-      when 98 then decode_int
+      when 98 then decode_signed_int
       when 88 then decode_pid
       when 104 then decode_small_tuple
       when 105 then decode_large_tuple
@@ -60,6 +61,10 @@ module Retf
       @data.getc.unpack1('C')
     end
 
+    def decode_signed_int
+      @data.read(4).unpack1('l>')
+    end
+
     def decode_int
       @data.read(4).unpack1('N')
     end
@@ -81,7 +86,8 @@ module Retf
       when 'true' then true
       when 'false' then false
       when 'nil' then nil
-      else str.to_sym
+      else
+        symbolize(str)
       end
     end
 
@@ -94,8 +100,22 @@ module Retf
       when 'true' then true
       when 'false' then false
       when 'nil' then nil
-      else str.to_sym
+      else
+        symbolize(str)
       end
+    end
+
+    def symbolize(str)
+      # all atoms are expected to be UTF-8 encoded
+      str.force_encoding(Encoding::UTF_8)
+
+      return str.to_sym unless str.start_with?('Elixir.')
+
+      val = str.delete_prefix('Elixir.').gsub('.', '::')
+
+      return str.to_sym unless Object.const_defined?(val)
+
+      Object.const_get(val)
     end
 
     def decode_small_tuple
@@ -111,9 +131,9 @@ module Retf
     end
 
     def decode_list
-      size = decode_int
-      result = []
-      Array.new(size) { decode_term }
+      # length does not include the tail
+      size = decode_int + 1
+      result = Array.new(size) { decode_term }
 
       # for erlang lists, if its a proper list
       # the last element will be an empty list
@@ -175,25 +195,27 @@ module Retf
 
       struct_name = result[:__struct__]
 
-      return result unless struct_name.is_a?(Symbol)
+      # Whatever was stored here does not respond to from_etf
+      # so lets just return the result as is.
+      #
+      # The decode_atom method handles attempting to
+      # constantize something that looks like it could be
+      # a class name.
+      return result unless struct_name.respond_to?(:from_etf)
 
-      rubified_name = struct_name.to_s.delete_prefix('Elixir.').gsub('.', '::')
-
-      return result unless Object.const_defined?(rubified_name)
-
-      klass = Object.const_get(rubified_name)
-
-      return result unless klass.respond_to?(:from_etf)
-
-      klass.from_etf(result)
+      struct_name.from_etf(result)
     end
 
     def decode_small_bigint
       size = decode_byte
       sign = decode_byte
-      bytes = @data.read(size).unpack1('C*')
+      bytes = @data.read(size).unpack('C*')
 
-      num = bytes.reduce(0) { |acc, byte| (acc << 8) | byte }
+      num = 0
+
+      bytes.each_with_index do |byte, idx|
+        num += (byte * (256**idx))
+      end
 
       num = -num unless sign.zero?
 
@@ -203,9 +225,13 @@ module Retf
     def decode_large_bigint
       size = decode_int
       sign = decode_byte
-      bytes = @data.read(size).unpack1('C*')
+      bytes = @data.read(size).unpack('C*')
 
-      num = bytes.reduce(0) { |acc, byte| (acc << 8) | byte }
+      num = 0
+
+      bytes.each_with_index do |byte, idx|
+        num += (byte * (256**idx))
+      end
 
       num = -num unless sign.zero?
 

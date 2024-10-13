@@ -13,13 +13,10 @@ require_relative 'retf/tuple'
 #
 # See the README for usage and compatibility information.
 module Retf
-  # Maximum value for a 32-bit unsigned integer
   USIZE_MAX = 4_294_967_295 # :nodoc:
 
-  # Maximum value for a 32-bit signed integer
   ISIZE_MAX = 2_147_483_647 # :nodoc:
 
-  # Minimum value for a 32-bit signed integer
   ISIZE_MIN = -2_147_483_648 # :nodoc:
 
   class << self
@@ -51,6 +48,9 @@ module Retf
       Encoder.new(value, compress:).encode
     end
 
+    alias dump encode
+    alias serialize encode
+
     # Decodes a binary string into a Ruby object.
     # Raises TypeError if the given binary string
     # cannot be decoded.
@@ -67,5 +67,8 @@ module Retf
     def decode(value)
       Decoder.new(value).decode
     end
+
+    alias load decode
+    alias deserialize decode
   end
 end

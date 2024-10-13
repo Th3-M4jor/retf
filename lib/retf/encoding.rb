@@ -3,24 +3,16 @@
 # This file contains monkey patches to add
 # etf enocding to basic Ruby objects
 
-class Object # :nodoc:
+class Class # :nodoc:
+  # This allows us to encode a class's name
+  # to how Elixir would expect a similar module
+  # to be named
   def to_etf
-    raise ArgumentError, 'Object does not support etf encoding' unless respond_to?(:as_etf)
+    raise ArgumentError, 'cannot encode an anonymous class' if name.nil?
 
-    result = as_etf
-
-    raise TypeError, 'expected a Has to be returned' unless result.is_a?(Hash)
-
-    result[:__struct__] = symbolize_class_name
-    result.to_etf
-  end
-
-  private
-
-  def etf_encode_class_name
     # replaces "::" with "." and converts to a symbol
     # then prepends "Elixir." to match Elixir's module naming convention
-    str = 'Elixir.' + self.class.name.gsub('::', '.') # rubocop:disable Style/StringConcatenation
+    str = 'Elixir.' + name.gsub('::', '.') # rubocop:disable Style/StringConcatenation
 
     raise ArgumentError, 'class name is too long, must be less than 255 characters' if str.length > 255
 
@@ -31,6 +23,19 @@ class Object # :nodoc:
       # 118 is the ATOM_EXT tag
       [118, str.bytesize, str].pack('Cna*')
     end
+  end
+end
+
+class Object # :nodoc:
+  def to_etf
+    raise ArgumentError, 'Object does not support etf encoding' unless respond_to?(:as_etf)
+
+    result = as_etf
+
+    raise TypeError, 'expected a Has to be returned' unless result.is_a?(Hash)
+
+    result[:__struct__] = self.class
+    result.to_etf
   end
 end
 
@@ -133,7 +138,7 @@ class Array # :nodoc:
   def to_etf
     # if the array is empty, we return the NIL_EXT tag
     # which makes it an empty list
-    return +'j' if empty?
+    return 'j'.b if empty?
 
     if size > ::Retf::USIZE_MAX
       raise ArgumentError,

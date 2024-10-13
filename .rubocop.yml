@@ -44,3 +44,6 @@ Metrics/AbcSize:
   Exclude:
   - 'spec/**/*'
   - 'lib/retf/decoder.rb'
+
+RSpec/ExampleLength:
+  Max: 50
