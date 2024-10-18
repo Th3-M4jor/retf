@@ -2,33 +2,7 @@
 
 require 'retf'
 
-module Test
-  class MyClass
-    attr_accessor :a, :b
-
-    def initialize(first, second)
-      self.a = first
-      self.b = second
-    end
-
-    def ==(other)
-      a == other.a && b == other.b
-    end
-
-    def self.from_etf(value)
-      new(value[:a], value[:b])
-    end
-  end
-
-  class MyOtherClass
-    attr_accessor :a, :b
-
-    def initialize(first = nil, second = nil)
-      self.a = first
-      self.b = second
-    end
-  end
-end
+require_relative '../support/test_classes'
 
 RSpec.describe Object do
   it 'does nothing when the class does not support etf decoding' do

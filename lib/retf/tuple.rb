@@ -30,11 +30,13 @@ module Retf
     end
 
     def to_etf
-      if size < 256
-        [104, size, *value.map(&:to_etf)].pack('CCa*')
-      else
-        [105, size, *value.map(&:to_etf)].pack('CNa*')
-      end
+      prefix = if size < 256
+                 [104, size].pack('CC')
+               else
+                 [105, size].pack('CN')
+               end
+
+      prefix << (value.map(&:to_etf).join)
     end
 
     def to_s
