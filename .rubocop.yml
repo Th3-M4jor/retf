@@ -12,7 +12,7 @@ require:
   - rubocop-performance
   - rubocop-rspec
 AllCops:
-  TargetRubyVersion: 3.2.0
+  TargetRubyVersion: 3.3.0
   SuggestExtensions: false
   NewCops: enable
 
