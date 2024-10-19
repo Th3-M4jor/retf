@@ -51,7 +51,7 @@ module Retf
       compressed_data = @data.read
       str = Zlib::Inflate.inflate(compressed_data)
 
-      raise ArgumentError, 'decompressed data is not the expected size' unless @data.size == uncompressed_size
+      raise ArgumentError, 'decompressed data is not the expected size' unless str.bytesize == uncompressed_size
 
       @data = StringIO.new(str).binmode
       decode_term

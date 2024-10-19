@@ -18,9 +18,7 @@ module Retf
       # followed by the uncompressed size
       # and the compressed data
       if @compress
-        # uncompressed size is the size of the data
-        # minus the initial tag byte?
-        uncompressed_size = result.size - 1
+        uncompressed_size = result.bytesize
         result = compress(result)
         [131, 80, uncompressed_size, result].pack('CCNa*')
       else
@@ -31,11 +29,7 @@ module Retf
     private
 
     def compress(data)
-      output = Stream.new
-      gz = Zlib::GzipWriter.new(output, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
-      gz.write(data)
-      gz.close
-      output.string
+      Zlib::Deflate.deflate(data)
     end
   end
 end
