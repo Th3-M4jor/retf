@@ -140,13 +140,13 @@ module Retf
     def decode_small_tuple
       size = decode_byte
       result = Array.new(size) { decode_term }
-      Tuple[*result]
+      Tuple.from_array(result)
     end
 
     def decode_large_tuple
       size = decode_int
       result = Array.new(size) { decode_term }
-      Tuple[*result]
+      Tuple.from_array(result)
     end
 
     def decode_list

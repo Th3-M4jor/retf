@@ -2,12 +2,12 @@
 
 Gem::Specification.new do |s|
   s.name        = 'retf'
-  s.version     = '0.0.1'
+  s.version     = '0.0.2'
   s.authors     = ['Th3-M4jor']
   s.summary     = 'Ruby ETF encoder/decoder'
   s.description = 'A pure Ruby Erlang ETF encoder/decoder'
 
-  s.required_ruby_version = '>= 3.3.0'
+  s.required_ruby_version = '>= 3.2.0'
 
   s.license = 'MIT'
   s.files = ['README.md', 'lib/**/*']

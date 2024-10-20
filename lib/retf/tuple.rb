@@ -14,8 +14,25 @@ module Retf
     alias length size
     alias count size
 
-    def self.[](...)
-      new(...)
+    # Workaround for how array splatting works
+    # to support decoding large tuples without
+    # worrying about stack overflows.
+    # Generally, you should call this method
+    # instead of `new` or `[]` when converting an array
+    # into a tuple.
+    #
+    # @param array [Array]
+    def self.from_array(array)
+      raise ArgumentError, 'size of tuple exceeds 4 byte integer limit' if array.size > ::Retf::USIZE_MAX
+
+      allocate.tap do |tuple|
+        tuple.instance_variable_set(:@value, array.freeze)
+        tuple.instance_variable_set(:@size, array.size)
+      end
+    end
+
+    def self.[](*)
+      new(*)
     end
 
     def initialize(*value)

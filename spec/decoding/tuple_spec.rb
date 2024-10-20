@@ -80,7 +80,7 @@ RSpec.describe Retf::Tuple do
 
       encoded = [131, 105, 2**16, *elements].pack('CCNa*')
 
-      expect(Retf.decode(encoded)).to eq(described_class.new(*expected_elements))
+      expect(Retf.decode(encoded)).to eq(described_class.from_array(expected_elements))
     end
   end
 end
