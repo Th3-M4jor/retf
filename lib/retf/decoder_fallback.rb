@@ -1,29 +1,28 @@
 # frozen_string_literal: true
 
+# This file exists as a fallback for the Decoder
+# for when IO::Buffer is unavailable or otherwise
+# not defined
+
 require 'zlib'
+require 'stringio'
 
 module Retf
   class Decoder # :nodoc:
     def initialize(data)
-      @data = IO::Buffer.for(data.freeze)
-      @offset = 0
+      @data = StringIO.new(data).binmode
     end
 
     def decode(skip_version_check:)
-      raise ArgumentError, 'malformed ETF' if !skip_version_check && decode_byte != 131
+      raise ArgumentError, 'malformed ETF' if !skip_version_check && @data.getbyte != 131
 
-      begin
-        decode_term
-      ensure
-        @data.free
-        @data = nil
-      end
+      decode_term
     end
 
     private
 
     def decode_term
-      tag = decode_byte
+      tag = @data.getbyte
 
       # While Ruby cannot do much to optimize
       # long case statements like this and
@@ -61,27 +60,18 @@ module Retf
     end
 
     def decompress_data
-      uncompressed_size = decode_int
-      compressed_data = @data.get_string(@offset)
+      uncompressed_size = @data.read(4).unpack1('N')
+      compressed_data = @data.read
       str = Zlib::Inflate.inflate(compressed_data)
-
-      # By freezing the string we can avoid
-      # the IO::Buffer class from copying the
-      # string when it initializes the buffer
-      str.freeze
 
       raise ArgumentError, 'decompressed data is not the expected size' unless str.bytesize == uncompressed_size
 
-      @data.free
-      @offset = 0
-
-      @data = IO::Buffer.for(str)
+      @data = StringIO.new(str).binmode
       decode_term
     end
 
     def decode_any_atom
-      tag = decode_byte
-
+      tag = @data.getbyte
       case tag
       when 119, 115 then decode_small_atom
       when 118, 100 then decode_atom
@@ -91,39 +81,28 @@ module Retf
     end
 
     def decode_byte
-      value = @data.get_value(:U8, @offset)
-      @offset += 1
-      value
+      @data.getc.unpack1('C')
     end
 
     def decode_signed_int
-      value = @data.get_value(:S32, @offset)
-      @offset += 4
-      value
+      @data.read(4).unpack1('l>')
     end
 
     def decode_int
-      value = @data.get_value(:U32, @offset)
-      @offset += 4
-      value
+      @data.read(4).unpack1('N')
     end
 
     def decode_short_int
-      value = @data.get_value(:U16, @offset)
-      @offset += 2
-      value
+      @data.read(2).unpack1('n')
     end
 
     def decode_float
-      value = @data.get_value(:F64, @offset)
-      @offset += 8
-      value
+      @data.read(8).unpack1('G')
     end
 
     def decode_small_atom
       size = decode_byte
-      str = @data.get_string(@offset, size)
-      @offset += size
+      str = @data.read(size)
 
       case str
       # special casing for the atoms true, false, and nil
@@ -137,8 +116,7 @@ module Retf
 
     def decode_atom
       size = decode_short_int
-      str = @data.get_string(@offset, size)
-      @offset += size
+      str = @data.read(size)
 
       case str
       # special casing for the atoms true, false, and nil
@@ -191,9 +169,7 @@ module Retf
 
     def decode_binary
       size = decode_int
-      value = @data.get_string(@offset, size)
-      @offset += size
-      value
+      @data.read(size)
     end
 
     # Even though its called a 'string'
@@ -203,10 +179,7 @@ module Retf
     # handle it
     def decode_string
       size = decode_short_int
-
-      value = @data.get_string(@offset, size).bytes
-      @offset += size
-      value
+      @data.read(size).bytes
     end
 
     def decode_reference
@@ -229,8 +202,7 @@ module Retf
     def decode_bit_binary
       size = decode_int
       bits = decode_byte
-
-      str = @data.get_string(@offset, size)
+      str = @data.read(size)
       BitBinary.new(str, bits)
     end
 
@@ -262,10 +234,7 @@ module Retf
     def decode_small_bigint
       size = decode_byte
       sign = decode_byte
-
-      bytes = @data.get_string(@offset, size).bytes
-
-      @offset += size
+      bytes = @data.read(size).bytes
 
       num = 0
 
@@ -281,10 +250,7 @@ module Retf
     def decode_large_bigint
       size = decode_int
       sign = decode_byte
-
-      bytes = @data.get_string(@offset, size).bytes
-
-      @offset += size
+      bytes = @data.read(size).bytes
 
       num = 0
 

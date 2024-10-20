@@ -1,7 +1,17 @@
 # frozen_string_literal: true
 
 require_relative 'retf/bit_binary'
-require_relative 'retf/decoder'
+
+# IO::Buffer may not be available in all Ruby versions
+# that we should support so if it is not available
+# we will use a fallback decoder that is a bit slower
+# and uses StringIO instead.
+if defined?(IO::Buffer)
+  require_relative 'retf/decoder'
+else
+  require_relative 'retf/decoder_fallback'
+end
+
 require_relative 'retf/encoder'
 require_relative 'retf/encoding'
 require_relative 'retf/pid'
@@ -64,8 +74,15 @@ module Retf
     # If the Class does not exist
     # or does not respond to `.from_etf`,
     # the hash will be returned as is.
+    #
+    # WARNING: For performance reasons, the given
+    # string may be modified in place or frozen.
+    # If you wish to re-use given string,
+    # you should pass a copy of it to this method
+    # instead.
+    # @param value [String] the binary string to decode
     def decode(value)
-      Decoder.new(value).decode(skip_version_check: false)
+      Decoder.new(value.freeze).decode(skip_version_check: false)
     end
 
     alias load decode

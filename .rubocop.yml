@@ -34,16 +34,22 @@ Metrics/ClassLength:
   Exclude:
   - 'spec/**/*'
   - 'lib/retf/decoder.rb'
+  - 'lib/retf/encoder.rb'
+  - 'lib/retf/decoder_fallback.rb'
 
 Metrics/CyclomaticComplexity:
   Exclude:
   - 'spec/**/*'
   - 'lib/retf/decoder.rb'
+  - 'lib/retf/encoder.rb'
+  - 'lib/retf/decoder_fallback.rb'
 
 Metrics/AbcSize:
   Exclude:
   - 'spec/**/*'
   - 'lib/retf/decoder.rb'
+  - 'lib/retf/encoder.rb'
+  - 'lib/retf/decoder_fallback.rb'
 
 RSpec/ExampleLength:
   Max: 50
