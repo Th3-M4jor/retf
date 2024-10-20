@@ -15,36 +15,45 @@ module Retf
       decode_term
     end
 
+    private
+
     def decode_term
       tag = @data.getbyte
 
-      # check the tag to get the type of the term
+      # While Ruby cannot do much to optimize
+      # long case statements like this and
+      # has to check each case in order,
+      # we can at least group similar tags
+      # and order them in a way that makes
+      # the ones which are probably more common
+      # in practice come first.
+      #
+      # Tried to optimize this to a jump table
+      # using an array of procs but it was slower
+      # with the yjit enabled... which??????
       case tag
-      when 70 then decode_float
-      when 80 then decompress_data
-      when 97 then decode_byte
-      when 98 then decode_signed_int
-      when 88 then decode_pid
-      when 104 then decode_small_tuple
-      when 105 then decode_large_tuple
-      when 116 then decode_map
-      # 106 is the tag for an empty list
-      when 106 then []
-      when 107 then decode_string
-      when 108 then decode_list
-      when 109 then decode_binary
-      when 110 then decode_small_bigint
-      when 111 then decode_large_bigint
-      when 90 then decode_reference
-      when 77 then decode_bit_binary
       when 118, 100 then decode_atom
       when 119, 115 then decode_small_atom
+      when 109 then decode_binary
+      when 97 then decode_byte
+      when 98 then decode_signed_int
+      when 116 then decode_map
+      when 104 then decode_small_tuple
+      when 70 then decode_float
+      when 108 then decode_list
+      when 106 then [] # empty list tag
+      when 107 then decode_string
+      when 110 then decode_small_bigint
+      when 111 then decode_large_bigint
+      when 88 then decode_pid
+      when 90 then decode_reference
+      when 105 then decode_large_tuple
+      when 77 then decode_bit_binary
+      when 80 then decompress_data
       else
         raise ArgumentError, "unknown or unimplemented tag: #{tag}"
       end
     end
-
-    private
 
     def decompress_data
       uncompressed_size = @data.read(4).unpack1('N')
@@ -60,8 +69,8 @@ module Retf
     def decode_any_atom
       tag = @data.getbyte
       case tag
-      when 118, 100 then decode_atom
       when 119, 115 then decode_small_atom
+      when 118, 100 then decode_atom
       else
         raise ArgumentError, "expected an atom tag, got #{tag}"
       end
@@ -92,7 +101,7 @@ module Retf
       str = @data.read(size).unpack1('a*')
 
       case str
-        # special casing for the atoms true, false, and nil
+      # special casing for the atoms true, false, and nil
       when 'true' then true
       when 'false' then false
       when 'nil' then nil
