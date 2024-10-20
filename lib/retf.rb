@@ -65,7 +65,7 @@ module Retf
     # or does not respond to `.from_etf`,
     # the hash will be returned as is.
     def decode(value)
-      Decoder.new(value).decode
+      Decoder.new(value).decode(skip_version_check: false)
     end
 
     alias load decode

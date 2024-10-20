@@ -9,7 +9,7 @@ module Retf
       @data = StringIO.new(data).binmode
     end
 
-    def decode(skip_version_check: false)
+    def decode(skip_version_check:)
       raise ArgumentError, 'malformed ETF' if !skip_version_check && @data.getbyte != 131
 
       decode_term
