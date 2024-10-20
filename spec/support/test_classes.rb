@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'retf'
-
 module Test
   class MyClass
     attr_accessor :a, :b

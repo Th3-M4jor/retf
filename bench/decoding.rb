@@ -2,6 +2,7 @@
 
 require 'benchmark/ips'
 require_relative '../lib/retf'
+require_relative '../spec/support/test_classes'
 
 EMPTY_MAP = [131, 116, 0].pack('CCN').freeze
 
@@ -22,6 +23,26 @@ COMPRESSED_STRING = [
   203, 101, 96, 96, 212, 73, 76, 74, 30, 69, 68,
   34, 0, 63, 40, 115, 115
 ].pack('C*').freeze
+
+LONG_ARRAY = Retf.encode(Array.new(1000, 42)).freeze
+
+DECODABLE_CLASS = Retf.encode(Test::MyClass.new(42, 'the answer')).freeze
+
+NON_DECODABLE_CLASS = begin
+  a = :a.to_etf
+  b = :b.to_etf
+  struct = :__struct__.to_etf
+  forty_two = 42.to_etf
+  the_answer = 'the answer'.to_etf
+  klass = Test::MyOtherClass.to_etf
+
+  # we're cheating a bit here and abusing the fact that
+  # Ruby Hashes preserve insertion order
+  # this is not the case for Erlang maps
+  # which are unordered
+  encoded_value = [131, 116, 3].pack('CCN')
+  encoded_value << a << forty_two << b << the_answer << struct << klass
+end.freeze
 
 RubyVM::YJIT.enable
 
@@ -44,5 +65,17 @@ Benchmark.ips do |x|
 
   x.report('decode compressed string') do
     Retf.decode(COMPRESSED_STRING)
+  end
+
+  x.report('decode long array') do
+    Retf.decode(LONG_ARRAY)
+  end
+
+  x.report('decode decodable class') do
+    Retf.decode(DECODABLE_CLASS)
+  end
+
+  x.report('decode non-decodable class') do
+    Retf.decode(NON_DECODABLE_CLASS)
   end
 end
