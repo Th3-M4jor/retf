@@ -36,10 +36,6 @@ NON_DECODABLE_CLASS = begin
   the_answer = 'the answer'.to_etf
   klass = Test::MyOtherClass.to_etf
 
-  # we're cheating a bit here and abusing the fact that
-  # Ruby Hashes preserve insertion order
-  # this is not the case for Erlang maps
-  # which are unordered
   encoded_value = [131, 116, 3].pack('CCN')
   encoded_value << a << forty_two << b << the_answer << struct << klass
 end.freeze

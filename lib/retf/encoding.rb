@@ -145,14 +145,18 @@ class Array # :nodoc:
             'array is too large to encode, size must fit in a 32-bit unsigned integer'
     end
 
-    objs = map(&:to_etf).join
+    objs = ''.b
+
+    each do |obj|
+      objs << obj.to_etf
+    end
 
     # 108 is the LIST_EXT tag
     # n is the size of the list
     # objs is the encoded objects in the list
     # 106 or 'j' is the NIL_EXT tag
     # which makes it a proper list
-    [108, size, objs].pack('CNa*') << 'j'
+    [108, size, objs].pack('CNa*') << 'j'.b
   end
 end
 
@@ -163,14 +167,17 @@ class Hash # :nodoc:
             'hash is too large to encode, size must fit in a 32-bit unsigned integer'
     end
 
-    values = map do |key, value|
-      key.to_etf << value.to_etf
+    objs = ''.b
+
+    each do |key, value|
+      objs << key.to_etf
+      objs << value.to_etf
     end
 
     # 116 is the MAP_EXT tag
     # n is the size of the map
     # values is the encoded key-value pairs
-    [116, size, values.join].pack('CNa*')
+    [116, size, objs].pack('CNa*')
   end
 end
 
