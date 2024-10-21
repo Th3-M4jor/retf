@@ -2,6 +2,8 @@
 
 require 'benchmark/ips'
 require_relative '../lib/retf'
+require 'msgpack'
+require 'json'
 
 LONG_ARRAY = (1..100).to_a.freeze
 
@@ -30,36 +32,84 @@ LARGE_HASH = {
 
 RubyVM::YJIT.enable
 
-Benchmark.ips do |x|
+Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
   # Configure the number of seconds used during
   # the warmup phase (default 2) and calculation phase (default 5)
   x.config(warmup: 2, time: 5)
 
-  x.report('encode long array') do
+  x.report('ETF - encode long array') do
     Retf.encode(LONG_ARRAY)
   end
 
-  x.report('encode long string') do
+  x.report('MSGPACK - encode long array') do
+    MessagePack.pack(LONG_ARRAY)
+  end
+
+  x.report('JSON - encode long array') do
+    JSON.dump(LONG_ARRAY)
+  end
+
+  x.report('ETF - encode long string') do
     Retf.encode(LONG_STRING)
   end
 
-  x.report('encode nested hash') do
+  x.report('MSGPACK - encode long string') do
+    MessagePack.pack(LONG_STRING)
+  end
+
+  x.report('JSON - encode long string') do
+    JSON.dump(LONG_STRING)
+  end
+
+  x.report('ETF - encode nested hash') do
     Retf.encode(NESTED_HASH)
   end
 
-  x.report('encode hash with array') do
+  x.report('MSGPACK - encode nested hash') do
+    MessagePack.pack(NESTED_HASH)
+  end
+
+  x.report('JSON - encode nested hash') do
+    JSON.dump(NESTED_HASH)
+  end
+
+  x.report('ETF - encode hash with array') do
     Retf.encode(HASH_WITH_ARRAY)
   end
 
-  x.report('encode hash with many elements') do
+  x.report('MSGPACK - encode hash with array') do
+    MessagePack.pack(HASH_WITH_ARRAY)
+  end
+
+  x.report('JSON - encode hash with array') do
+    JSON.dump(HASH_WITH_ARRAY)
+  end
+
+  x.report('ETF - encode hash with many elements') do
     Retf.encode(HASH_WITH_MANY_ELEMENTS)
   end
 
-  x.report('encode large hash') do
+  x.report('MSGPACK - encode hash with many elements') do
+    MessagePack.pack(HASH_WITH_MANY_ELEMENTS)
+  end
+
+  x.report('JSON - encode hash with many elements') do
+    JSON.dump(HASH_WITH_MANY_ELEMENTS)
+  end
+
+  x.report('ETF - encode large hash') do
     Retf.encode(LARGE_HASH)
   end
 
-  x.report('encode large hash with compression') do
+  x.report('MSGPACK - encode large hash') do
+    MessagePack.pack(LARGE_HASH)
+  end
+
+  x.report('JSON - encode large hash') do
+    JSON.dump(LARGE_HASH)
+  end
+
+  x.report('ETF - encode large hash with compression') do
     Retf.encode(LARGE_HASH, compress: true)
   end
 end
