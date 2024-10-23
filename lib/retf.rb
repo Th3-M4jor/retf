@@ -89,3 +89,5 @@ module Retf
     alias deserialize decode
   end
 end
+
+require_relative 'retf/retf_native'
