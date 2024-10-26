@@ -18,6 +18,8 @@ static VALUE decode_reference(char *buffer, size_t buffer_size, size_t *offset);
 static VALUE decode_pid(char *buffer, size_t buffer_size, size_t *offset);
 static VALUE decode_bit_binary(char *buffer, size_t buffer_size, size_t *offset);
 
+static VALUE symbolize_string(VALUE str);
+
 static VALUE decode_term(char *buffer, size_t buffer_size, size_t *offset);
 
 VALUE retf_decode(VALUE self, VALUE str, VALUE skip_version_check)
@@ -53,10 +55,10 @@ static unsigned char decode_byte(char *buffer, size_t buffer_size, size_t *offse
         rb_raise(rb_eRuntimeError, "Unexpected end of buffer");
     }
 
-    unsigned char byte = buffer[*offset];
+    unsigned char b = buffer[*offset];
     (*offset)++;
 
-    return byte;
+    return b;
 }
 
 static uint16_t decode_short(char *buffer, size_t buffer_size, size_t *offset)
@@ -128,8 +130,10 @@ static VALUE decode_float(char *buffer, size_t buffer_size, size_t *offset)
     // (big endian) to host byte order
     uint64_t num = *(uint64_t *)(buffer + *offset);
     num = be64toh(num);
+    double value;
 
-    double value = *(double *)&num;
+    // workaround for strict aliasing rules
+    memcpy(&value, &num, 8);
 
     *offset += 8;
 
@@ -222,7 +226,7 @@ static VALUE symbolize_string(VALUE str)
 
     if (c_str_len <= 7 || memcmp(c_str, "Elixir.", 7) != 0)
     {
-        return rb_str_intern(str);
+        return rb_to_symbol(str);
     }
 
     // confirmed we have something that looks like it could
@@ -232,10 +236,8 @@ static VALUE symbolize_string(VALUE str)
     // as its likely not the most common case.
 
     VALUE prefix_deleted = rb_utf8_str_new(c_str + 7, c_str_len - 7);
-    VALUE period = retf_constants_get_period();
-    VALUE double_colon = retf_constants_get_double_colon();
 
-    VALUE rubified = rb_funcall(prefix_deleted, rb_intern("gsub"), 2, period, double_colon);
+    VALUE rubified = rb_funcall(prefix_deleted, rb_intern("gsub"), 2, rb_str_new_lit("."), rb_str_new_lit("::"));
 
     VALUE defined = rb_funcall(rb_cObject, rb_intern("const_defined?"), 1, rubified);
 
@@ -245,7 +247,7 @@ static VALUE symbolize_string(VALUE str)
     }
     else
     {
-        return rb_str_intern(str);
+        return rb_to_symbol(str);
     }
 }
 
@@ -276,7 +278,7 @@ static VALUE decode_small_tuple(char *buffer, size_t buffer_size, size_t *offset
         rb_ary_push(tuple, decode_term(buffer, buffer_size, offset));
     }
 
-    VALUE tuple_class = retf_constants_get_tuple();
+    VALUE tuple_class = retf_constants_get_tuple_class();
 
     return rb_funcall(tuple_class, rb_intern("from_array"), 1, tuple);
 }
@@ -292,7 +294,7 @@ static VALUE decode_large_tuple(char *buffer, size_t buffer_size, size_t *offset
         rb_ary_push(tuple, decode_term(buffer, buffer_size, offset));
     }
 
-    VALUE tuple_class = retf_constants_get_tuple();
+    VALUE tuple_class = retf_constants_get_tuple_class();
 
     return rb_funcall(tuple_class, rb_intern("from_array"), 1, tuple);
 }
@@ -311,9 +313,8 @@ static VALUE decode_list(char *buffer, size_t buffer_size, size_t *offset)
     // For proper erlang lists the last element should be
     // an empty list; If so, we'll remove it.
     VALUE tail = rb_ary_entry(list, length);
-    VALUE empty_ary = retf_constants_get_empty_array();
 
-    if (RTEST(rb_big_eq(tail, empty_ary)))
+    if (TYPE(tail) == T_ARRAY && rb_array_len(tail) == 0)
     {
         rb_ary_pop(list);
     }
@@ -321,7 +322,7 @@ static VALUE decode_list(char *buffer, size_t buffer_size, size_t *offset)
     return list;
 }
 
-// This is erlang style "strings" which are just a list of
+// This is for erlang style "strings" which are just a list of
 // integers that each fit in a byte.
 static VALUE decode_erl_string(char *buffer, size_t buffer_size, size_t *offset)
 {
@@ -357,7 +358,7 @@ static VALUE decode_reference(char *buffer, size_t buffer_size, size_t *offset)
 
     for (uint16_t i = 0; i < size; i++)
     {
-        int next_id = decode_int(buffer, buffer_size, offset);
+        uint32_t next_id = decode_int(buffer, buffer_size, offset);
         rb_ary_push(id, INT2FIX(next_id));
     }
 
@@ -410,7 +411,9 @@ static VALUE decode_map(char *buffer, size_t buffer_size, size_t *offset)
         rb_hash_aset(map, key, value);
     }
 
-    VALUE struct_class = rb_hash_aref(map, rb_intern("__struct__"));
+    VALUE struct_sym = retf_constants_get_struct();
+
+    VALUE struct_class = rb_hash_aref(map, rb_id2sym(struct_sym));
 
     if (RTEST(struct_class) && rb_respond_to(struct_class, rb_intern("from_etf")))
     {
@@ -436,18 +439,20 @@ static VALUE decode_small_bigint(char *buffer, size_t buffer_size, size_t *offse
 
     for (unsigned char i = 0; i < size; i++)
     {
-        unsigned char byte = buffer[*offset + i];
-        VALUE byte_value = INT2FIX(byte);
+        unsigned char b = buffer[*offset + i];
+        VALUE byte_value = INT2FIX(b);
         VALUE idx = INT2FIX(i);
-        VALUE shifted = rb_int_mul(byte_value, rb_int_pow(two_fifty_six, idx));
-        num = rb_int_add(num, shifted);
+
+        VALUE powed = rb_funcall(two_fifty_six, rb_intern("**"), 1, idx);
+        VALUE shifted = rb_funcall(byte_value, rb_intern("*"), 1, powed);
+        num = rb_funcall(num, rb_intern("+"), 1, shifted);
     }
 
     *offset += size;
 
     if (sign != 0)
     {
-        num = rb_int_neg(num);
+        num = rb_funcall(num, rb_intern("*"), 1, INT2FIX(-1));
     }
 
     return num;
@@ -468,29 +473,95 @@ static VALUE decode_large_bigint(char *buffer, size_t buffer_size, size_t *offse
 
     for (uint32_t i = 0; i < size; i++)
     {
-        unsigned char byte = buffer[*offset + i];
-        VALUE byte_value = INT2FIX(byte);
-        VALUE idx = INT2NUM(i);
-        VALUE shifted = rb_int_mul(byte_value, rb_int_pow(two_fifty_six, idx));
-        num = rb_int_add(num, shifted);
+        unsigned char b = buffer[*offset + i];
+        VALUE byte_value = INT2FIX(b);
+        VALUE idx = INT2FIX(i);
+
+        VALUE powed = rb_funcall(two_fifty_six, rb_intern("**"), 1, idx);
+        VALUE shifted = rb_funcall(byte_value, rb_intern("*"), 1, powed);
+        num = rb_funcall(num, rb_intern("+"), 1, shifted);
     }
 
     *offset += size;
 
     if (sign != 0)
     {
-        num = rb_int_neg(num);
+        num = rb_funcall(num, rb_intern("*"), 1, INT2FIX(-1));
     }
 
     return num;
 }
 
-/*
 static VALUE decompress_data(char *buffer, size_t buffer_size, size_t *offset)
 {
     uint32_t uncompressed_size = decode_int(buffer, buffer_size, offset);
 
-    struct zstream z;
-    zstream_init(&z);
+    VALUE zipped_str = rb_str_new(buffer + *offset, buffer_size - *offset);
+
+    VALUE uncompressed_data = rb_funcall(retf_constants_get_zlib_inflate(), rb_intern("inflate"), 1, zipped_str);
+
+    size_t new_buffer_size = RSTRING_LEN(uncompressed_data);
+
+    if (new_buffer_size != uncompressed_size)
+    {
+        rb_raise(rb_eArgError, "Decompressed data size does not match expected size");
+    }
+
+    size_t new_offset = 0;
+    char *new_buffer = RSTRING_PTR(uncompressed_data);
+
+    return decode_term(new_buffer, new_buffer_size, &new_offset);
 }
-*/
+
+static VALUE decode_term(char *buffer, size_t buffer_size, size_t *offset)
+{
+    unsigned char tag = decode_byte(buffer, buffer_size, offset);
+
+    switch (tag)
+    {
+    case 118:
+    case 100:
+        return decode_atom(buffer, buffer_size, offset);
+    case 119:
+    case 115:
+        return decode_small_atom(buffer, buffer_size, offset);
+    case 109:
+        return decode_binary(buffer, buffer_size, offset);
+    case 97:
+        return INT2FIX(decode_byte(buffer, buffer_size, offset));
+    case 98:
+        return INT2NUM(decode_signed_int(buffer, buffer_size, offset));
+    case 116:
+        return decode_map(buffer, buffer_size, offset);
+    case 104:
+        return decode_small_tuple(buffer, buffer_size, offset);
+    case 70:
+        return decode_float(buffer, buffer_size, offset);
+    case 108:
+        return decode_list(buffer, buffer_size, offset);
+    case 106:
+        // 106 is for an empty list
+        return rb_ary_new();
+    case 107:
+        return decode_erl_string(buffer, buffer_size, offset);
+    case 110:
+        return decode_small_bigint(buffer, buffer_size, offset);
+    case 111:
+        return decode_large_bigint(buffer, buffer_size, offset);
+    case 88:
+        return decode_pid(buffer, buffer_size, offset);
+    case 90:
+        return decode_reference(buffer, buffer_size, offset);
+    case 105:
+        return decode_large_tuple(buffer, buffer_size, offset);
+    case 77:
+        return decode_bit_binary(buffer, buffer_size, offset);
+    case 80:
+        return decompress_data(buffer, buffer_size, offset);
+    default:
+        rb_raise(rb_eArgError, "unexpected tag: %u", (unsigned int)tag);
+    }
+
+    // Should never get here
+    return Qnil;
+}

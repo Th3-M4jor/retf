@@ -1,18 +1,27 @@
 #include "constants.h"
 
 // Classes
-VALUE PID_CLASS;
-VALUE REFERENCE_CLASS;
-VALUE TUPLE_CLASS;
-VALUE BITSTRING_CLASS;
+static VALUE PID_CLASS;
+static VALUE REFERENCE_CLASS;
+static VALUE TUPLE_CLASS;
+static VALUE BITSTRING_CLASS;
+static VALUE ZLIB_INFLATE;
+static VALUE ZLIB_DEFLATE;
 
-// Strings
-VALUE ELIXIR_MOD_PREFIX;
-VALUE PERIOD;
-VALUE DOUBLE_COLON;
+// Symbols
+static VALUE STRUCT;
 
-// EMPTY FROZEN Array
-VALUE EMPTY_ARRAY;
+// NOTE: AS_ETF and TO_ETF
+// have slightly different
+// meanings. AS_ETF is what
+// classes should implement
+// to return a format that
+// will then be encoded
+// to ETF. TO_ETF is a method
+// that will directly encode
+// the object to ETF.
+static VALUE AS_ETF;
+static VALUE TO_ETF;
 
 void retf_constants_setup(VALUE mRetf)
 {
@@ -21,12 +30,15 @@ void retf_constants_setup(VALUE mRetf)
     TUPLE_CLASS = rb_const_get(mRetf, rb_intern("Tuple"));
     BITSTRING_CLASS = rb_const_get(mRetf, rb_intern("BitBinary"));
 
-    ELIXIR_MOD_PREFIX = rb_interned_str_cstr("Elixir.");
-    PERIOD = rb_interned_str_cstr(".");
-    DOUBLE_COLON = rb_interned_str_cstr("::");
+    VALUE zlib = rb_const_get(rb_cObject, rb_intern("Zlib"));
 
-    EMPTY_ARRAY = rb_ary_new_capa(0);
-    rb_ary_freeze(EMPTY_ARRAY);
+    ZLIB_INFLATE = rb_const_get(zlib, rb_intern("Inflate"));
+    ZLIB_DEFLATE = rb_const_get(zlib, rb_intern("Deflate"));
+
+    STRUCT = rb_intern("__struct__");
+
+    AS_ETF = rb_intern("as_etf");
+    TO_ETF = rb_intern("to_etf");
 }
 
 VALUE retf_constants_get_pid_class(void)
@@ -49,22 +61,28 @@ VALUE retf_constants_get_bitstring_class(void)
     return BITSTRING_CLASS;
 }
 
-VALUE retf_constants_get_elixir_mod_prefix(void)
+VALUE retf_constants_get_zlib_inflate(void)
 {
-    return ELIXIR_MOD_PREFIX;
+    return ZLIB_INFLATE;
 }
 
-VALUE retf_constants_get_period(void)
+VALUE retf_constants_get_zlib_deflate(void)
 {
-    return PERIOD;
+    return ZLIB_DEFLATE;
 }
 
-VALUE retf_constants_get_double_colon(void)
+VALUE retf_constants_get_struct(void)
 {
-    return DOUBLE_COLON;
+    return STRUCT;
 }
 
-VALUE retf_constants_get_empty_array(void)
+VALUE retf_constants_get_as_etf(void)
 {
-    return EMPTY_ARRAY;
+    return AS_ETF;
 }
+
+VALUE retf_constants_get_to_etf(void)
+{
+    return TO_ETF;
+}
+

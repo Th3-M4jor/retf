@@ -25,9 +25,11 @@ module Retf
         @creation == other.creation
     end
 
-    def to_etf
-      encoded_node = @node.to_etf
-      [90, @id.size, encoded_node, creation, *@id].pack('Cna*NN*')
+    def to_etf(buffer)
+      buffer << [90, @id.size].pack('Cn')
+      @node.to_etf(buffer)
+
+      buffer << [creation, *@id].pack('NN*')
     end
 
     def to_s

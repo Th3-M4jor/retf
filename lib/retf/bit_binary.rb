@@ -11,8 +11,10 @@ module Retf
       @bits_size = bits_size
     end
 
-    def to_etf
-      [77, binary.bytesize, bits_size, binary].pack('CNCa*')
+    def to_etf(buffer)
+      buffer << [77, binary.bytesize, bits_size].pack('CNC')
+
+      buffer << binary
     end
 
     def ==(other)

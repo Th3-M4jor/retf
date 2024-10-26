@@ -13,7 +13,7 @@ else
 end
 
 require_relative 'retf/encoder'
-require_relative 'retf/encoding'
+# require_relative 'retf/encoding'
 require_relative 'retf/pid'
 require_relative 'retf/reference'
 require_relative 'retf/tuple'
@@ -55,7 +55,8 @@ module Retf
     # @option compress [Boolean] whether to Gzip compress the encoded value
     # @return [String] the encoded value
     def encode(value, compress: false)
-      Encoder.new(value, compress:).encode
+      # Encoder.new(value, compress:).encode
+      ::Retf::Native.encode(value, compress)
     end
 
     alias dump encode
@@ -82,7 +83,8 @@ module Retf
     # instead.
     # @param value [String] the binary string to decode
     def decode(value)
-      Decoder.new(value.freeze).decode(skip_version_check: false)
+      ::Retf::Native.decode(value, false)
+      # Decoder.new(value.freeze).decode(skip_version_check: false)
     end
 
     alias load decode
