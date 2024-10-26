@@ -1,8 +1,8 @@
+#include <endian.h>
 #include <ruby.h>
-#include <zlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <endian.h>
+#include <zlib.h>
 
 #include "constants.h"
 

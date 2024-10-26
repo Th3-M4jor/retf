@@ -10,4 +10,4 @@
 #define RETF_DEBUG_PRINT(...) ((void)0)
 #endif
 
-#endif // RETF_DEBUG_H
+#endif  // RETF_DEBUG_H

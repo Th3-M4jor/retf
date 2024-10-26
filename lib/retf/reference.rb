@@ -25,7 +25,7 @@ module Retf
         @creation == other.creation
     end
 
-    def to_etf(buffer)
+    def to_etf(buffer = ''.b)
       buffer << [90, @id.size].pack('Cn')
       @node.to_etf(buffer)
 

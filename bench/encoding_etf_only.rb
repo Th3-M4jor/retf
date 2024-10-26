@@ -2,6 +2,7 @@
 
 require 'benchmark/ips'
 require_relative '../lib/retf'
+require_relative '../spec/support/test_classes'
 
 LONG_ARRAY = (1..100).to_a.freeze
 
@@ -26,6 +27,12 @@ LARGE_HASH = {
   baz: NESTED_HASH,
   qux: HASH_WITH_ARRAY,
   quux: HASH_WITH_MANY_ELEMENTS
+}.freeze
+
+HASH_WITH_ENCODABLE_CLASS = {
+  a: Test::MyClass.new(42, 'the answer').freeze,
+  b: NESTED_HASH,
+  c: HASH_WITH_ARRAY
 }.freeze
 
 RubyVM::YJIT.enable
@@ -61,5 +68,9 @@ Benchmark.ips do |x|
 
   x.report('ETF - encode large hash with compression') do
     Retf.encode(LARGE_HASH, compress: true)
+  end
+
+  x.report('ETF - encode hash with encodable class') do
+    Retf.encode(HASH_WITH_ENCODABLE_CLASS)
   end
 end

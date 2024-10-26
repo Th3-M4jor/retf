@@ -2,6 +2,7 @@
 #define RETF_CONSTANTS_H
 
 #include <ruby.h>
+
 #include "debug.h"
 
 #define RETF_ISIZE_MIN -2147483648
@@ -24,4 +25,4 @@ VALUE retf_constants_get_struct(void);
 VALUE retf_constants_get_as_etf(void);
 VALUE retf_constants_get_to_etf(void);
 
-#endif // RETF_CONSTANTS_H
+#endif  // RETF_CONSTANTS_H

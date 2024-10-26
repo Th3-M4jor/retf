@@ -2,8 +2,9 @@
 #define RETF_H
 
 #include <ruby.h>
+
+#include "constants.h"
 #include "decode.h"
 #include "encode.h"
-#include "constants.h"
 
-#endif // RETF_H
+#endif  // RETF_H

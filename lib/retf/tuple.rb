@@ -46,7 +46,7 @@ module Retf
       value.each(&)
     end
 
-    def to_etf(buffer)
+    def to_etf(buffer = ''.b)
       buffer << if size < 256
                   [104, size].pack('CC')
                 else
