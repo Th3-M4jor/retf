@@ -11,6 +11,7 @@
 require:
   - rubocop-performance
   - rubocop-rspec
+  - rubocop-thread_safety
 AllCops:
   TargetRubyVersion: 3.2.0
   SuggestExtensions: false

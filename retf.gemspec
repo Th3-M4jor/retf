@@ -13,13 +13,16 @@ Gem::Specification.new do |s|
   s.files = ['README.md', 'lib/**/*']
   s.require_paths = ['lib']
 
+  s.extensions = ['ext/retf/extconf.rb']
+
   s.add_development_dependency 'benchmark-ips', '~> 2.9'
   s.add_development_dependency 'msgpack', '~> 1.7'
   s.add_development_dependency 'rake', '~> 13.0'
   s.add_development_dependency 'rake-compiler', '~> 1.2'
   s.add_development_dependency 'rspec', '~> 3.10'
-  s.add_development_dependency 'rubocop', '~> 1.18'
-  s.add_development_dependency 'rubocop-performance', '~> 1.11'
-  s.add_development_dependency 'rubocop-rspec', '~> 3.1'
+  s.add_development_dependency 'rubocop'
+  s.add_development_dependency 'rubocop-performance'
+  s.add_development_dependency 'rubocop-rspec'
+  s.add_development_dependency 'rubocop-thread_safety'
   s.metadata['rubygems_mfa_required'] = 'true'
 end

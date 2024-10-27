@@ -128,12 +128,45 @@ static VALUE encode_big_integer(VALUE bigint, VALUE str_buffer) {
   // large integer encoding... yaayyyy
   char sign = rb_big_sign(bigint) == 0 ? 1 : 0;
 
-  VALUE abs = rb_funcall(bigint, rb_intern("abs"), 0);
-  VALUE digits = rb_funcall(abs, rb_intern("digits"), 1, INT2FIX(256));
+  if (sign == 1) {
+    bigint = rb_funcall(bigint, rb_intern("abs"), 0);
+  }
 
-  long len = rb_array_len(digits);
+  // going with a length of 11 bytes
+  // since we likely won't be encoding
+  // anything larger than that for the
+  // most part.
+  VALUE str = rb_str_buf_new(11);
 
-  if (len < 256) {
+  long len = 0;
+
+  while (!RTEST(rb_big_eq(bigint, INT2FIX(0)))) {
+    if (RB_TYPE_P(bigint, T_FIXNUM)) {
+      break;
+    }
+
+    char byte = FIX2INT(rb_big_and(bigint, INT2FIX(0xFF)));
+    bigint = rb_big_rshift(bigint, INT2FIX(8));
+
+    rb_str_cat(str, &byte, 1);
+    len++;
+  }
+
+  // At some point rb_big_rshift may return a fixnum
+  // so we need to handle that case as well.
+  if(RB_TYPE_P(bigint, T_FIXNUM)) {
+    long long bigint_val = FIX2LONG(bigint);
+
+    while (bigint_val > 0) {
+      char byte = bigint_val & 0xFF;
+      bigint_val >>= 8;
+
+      rb_str_cat(str, &byte, 1);
+      len++;
+    }
+  }
+
+  if(len < 256) {
     unsigned char new_len = len;
     rb_str_cat(str_buffer, "\x6E", 1);
     rb_str_cat(str_buffer, (char *)&new_len, 1);
@@ -144,15 +177,7 @@ static VALUE encode_big_integer(VALUE bigint, VALUE str_buffer) {
   }
 
   rb_str_cat(str_buffer, &sign, 1);
-
-  for (long i = 0; i < len; i++) {
-    VALUE byte = rb_ary_entry(digits, i);
-    unsigned char byte_val = FIX2INT(byte);
-
-    rb_str_cat(str_buffer, (char *)&byte_val, 1);
-  }
-
-  return str_buffer;
+  return rb_str_concat(str_buffer, str);
 }
 
 static VALUE encode_fixed_integer(long val, VALUE str_buffer) {

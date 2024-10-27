@@ -45,7 +45,7 @@ if that constant does not exist, the symbol `:"Elixir.MyModule.SubModule"` will 
 
 
 ### Custom Types
-If a class implements the `#as_etf` method it will be called
+If a class defines an `#as_etf` method it will be called
 when serializing an instance of that class. The method should
 return a `Hash` containing its state, which will be serialized
 as a map with an extra `:__struct__` key containing the class name
@@ -56,4 +56,10 @@ locate a class with the given name after "Rubifying" it
 (e.g. `:"Elixir.MyClass.MyModule"` -> `MyModule::MyClass`)
 and call its `.from_etf` method with the map passed as an argument.
 If the class does not exist or does not respond to `.from_etf`
-then the map will be unmodified.
+then the map will be returned unmodified.
+
+Should you wish to override the default serialization behavior for a class
+you can instead define a `#to_etf` method which receives a buffer object
+that should be used to write the serialized form of the object and
+return the passed writer object. Not following this pattern will result
+in undefined behavior.
