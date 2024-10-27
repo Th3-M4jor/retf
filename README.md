@@ -1,5 +1,7 @@
 # RETF
-A pure Ruby parser and serializer for the Erlang External Term Format (ETF).
+A ~~pure Ruby~~ parser and serializer for the Erlang External Term Format (ETF).
+
+(This started as a pure Ruby implementation but it was as slow as molasses compared to JSON and msgpack, so it was rewritten in C)
 
 ## Installation
 ```bash
