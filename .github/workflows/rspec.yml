@@ -1,13 +1,27 @@
 name: RSpec and RuboCop
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        # Due to https://github.com/actions/runner/issues/849, we have to use quotes for '3.0'
-        ruby: ['3.2', '3.3', truffleruby]
+        ruby: 
+         - '3.2'
+         - '3.3'
+          # Removed TruffleRuby due to
+          # a symbol not being defined error
+          # see https://github.com/oracle/truffleruby/issues/3697
+          #
+          # TODO: Uncomment when resolved
+         # - truffleruby
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4

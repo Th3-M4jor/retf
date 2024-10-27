@@ -32,8 +32,7 @@ static inline VALUE scan_and_call(int argc, VALUE *argv, VALUE self,
   return func(self, str_buffer);
 }
 
-VALUE
-retf_encode(VALUE self, VALUE to_encode, VALUE compress) {
+VALUE retf_encode(VALUE self, VALUE to_encode, VALUE compress) {
   VALUE str_buffer = rb_str_buf_new(100);
 
   if (RTEST(compress)) {
