@@ -4,7 +4,7 @@ require 'retf'
 require 'securerandom'
 
 desc 'Fuzzing task for the decoder'
-task :fuzz do
+task fuzz: :compile do
   # Generates random data and ensures that it either decodes successfully or raises an error
   # The thing we don't want is for the program to crash
 
