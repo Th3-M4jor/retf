@@ -5,7 +5,9 @@ require_relative '../lib/retf'
 require 'msgpack'
 require 'json'
 
-LONG_ARRAY = (1..100).to_a.freeze
+LARGE_INTEGER_PAIR = [(2**32) - 1, (2**63) - 1].freeze
+
+LONG_ARRAY = ([123, 'abc', { a: :b, c: [(2**63) - 1], d: 'asdfed' * 10 }] * 10).freeze
 
 LONG_STRING = 'abc' * 100
 
@@ -36,6 +38,18 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
   # Configure the number of seconds used during
   # the warmup phase (default 2) and calculation phase (default 5)
   x.config(warmup: 2, time: 5)
+
+  x.report('ETF - encode large integer pair') do
+    Retf.encode(LARGE_INTEGER_PAIR)
+  end
+
+  x.report('MSGPACK - encode large integer pair') do
+    MessagePack.pack(LARGE_INTEGER_PAIR)
+  end
+
+  x.report('JSON - encode large integer pair') do
+    JSON.dump(LARGE_INTEGER_PAIR)
+  end
 
   x.report('ETF - encode long array') do
     Retf.encode(LONG_ARRAY)
