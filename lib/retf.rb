@@ -1,19 +1,6 @@
 # frozen_string_literal: true
 
 require_relative 'retf/bit_binary'
-
-# IO::Buffer may not be available in all Ruby versions
-# that we should support so if it is not available
-# we will use a fallback decoder that is a bit slower
-# and uses StringIO instead.
-if defined?(IO::Buffer)
-  require_relative 'retf/decoder'
-else
-  require_relative 'retf/decoder_fallback'
-end
-
-require_relative 'retf/encoder'
-require_relative 'retf/encoding'
 require_relative 'retf/pid'
 require_relative 'retf/reference'
 require_relative 'retf/tuple'
@@ -52,10 +39,10 @@ module Retf
     #
     #
     # @param value [Object] the value to encode
-    # @option compress [Boolean] whether to Gzip compress the encoded value
+    # @option compress [Boolean] whether to Zlib compress the encoded value
     # @return [String] the encoded value
     def encode(value, compress: false)
-      Encoder.new(value, compress:).encode
+      ::Retf::Native.encode(value, compress)
     end
 
     alias dump encode
@@ -82,10 +69,12 @@ module Retf
     # instead.
     # @param value [String] the binary string to decode
     def decode(value)
-      Decoder.new(value.freeze).decode(skip_version_check: false)
+      ::Retf::Native.decode(value, false)
     end
 
     alias load decode
     alias deserialize decode
   end
 end
+
+require_relative 'retf/retf_native'

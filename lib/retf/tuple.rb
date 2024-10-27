@@ -46,14 +46,14 @@ module Retf
       value.each(&)
     end
 
-    def to_etf
-      prefix = if size < 256
-                 [104, size].pack('CC')
-               else
-                 [105, size].pack('CN')
-               end
+    def to_etf(buffer = ''.b)
+      buffer << if size < 256
+                  [104, size].pack('CC')
+                else
+                  [105, size].pack('CN')
+                end
 
-      prefix << (value.map(&:to_etf).join)
+      value.each { _1.to_etf(buffer) }
     end
 
     def to_s

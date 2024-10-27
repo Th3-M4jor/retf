@@ -20,11 +20,13 @@ module Retf
       @creation = creation
     end
 
-    def to_etf
-      encoded_node = @node.to_etf
+    def to_etf(buffer = ''.b)
+      buffer << [88].pack('C')
+
+      @node.to_etf(buffer)
 
       # 88 is the tag for a PID
-      [88, encoded_node, id, serial, creation].pack('Ca*NNN')
+      buffer << [id, serial, creation].pack('NNN')
     end
 
     def to_s

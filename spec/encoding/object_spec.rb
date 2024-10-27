@@ -20,10 +20,10 @@ RSpec.describe Object do
 
     expected = [
       131, 116, 3,
+      119, 10, '__struct__', 119, 19, 'Elixir.Test.MyClass',
       119, 1, 'a', 97, 42,
-      119, 1, 'b', 109, str.bytesize, str,
-      119, 10, '__struct__', 119, 19, 'Elixir.Test.MyClass'
-    ].pack('CCNCCaCCCCaCNa*CCa*CCa*')
+      119, 1, 'b', 109, str.bytesize, str
+    ].pack('CCNCCa*CCa*CCaCCCCaCNa*')
 
     expect(encoded).to eq(expected)
   end
