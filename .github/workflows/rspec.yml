@@ -30,6 +30,28 @@ jobs:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
     - run: bundle exec rake
+  fuzzing:
+    strategy:
+        fail-fast: false
+        matrix:
+          os: [ubuntu-latest]
+          ruby: 
+           - '3.2'
+           - '3.3'
+            # Removed TruffleRuby due to
+            # a symbol not being defined error
+            # see https://github.com/oracle/truffleruby/issues/3697
+            #
+            # TODO: Uncomment when resolved
+           # - truffleruby
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+    - run: bundle exec rake fuzz
   rubocop:
     runs-on: ubuntu-latest
     steps:
