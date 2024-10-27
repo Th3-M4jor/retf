@@ -26,7 +26,7 @@ RSpec.describe Hash do
     encoded = [131, 116, 0, 0, 0, 3, 97, 42, 107, 0, 1, 1, 119, 1, 97, 119, 1, 98, 109, 0, 0,
                0, 1, 99, 106].pack('C*')
 
-    expect(Retf.decode(encoded)).to eq({ 42 => [1], a: :b, 'c' => [] })
+    expect(Retf.decode(encoded)).to eq({ 42 => "\x01", a: :b, 'c' => [] })
   end
 
   it 'decodes a map with nested maps' do
@@ -34,6 +34,6 @@ RSpec.describe Hash do
                0, 0, 0, 2, 109, 0, 0, 0, 1, 97, 109, 0, 0, 0, 1, 99, 106, 119, 1, 120, 109,
                0, 0, 0, 1, 99, 106].pack('C*')
 
-    expect(Retf.decode(encoded)).to eq({ a: { %w[a c] => :x }, 42 => [1], 'c' => [] })
+    expect(Retf.decode(encoded)).to eq({ a: { %w[a c] => :x }, 42 => "\x01", 'c' => [] })
   end
 end

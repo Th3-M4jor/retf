@@ -302,16 +302,11 @@ static VALUE decode_erl_string(char *buffer, size_t buffer_size,
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
-  VALUE ary = rb_ary_new_capa(length);
-
-  for (uint16_t i = 0; i < length; i++) {
-    int byte = buffer[*offset + i];
-    rb_ary_push(ary, INT2FIX(byte));
-  }
+  VALUE str = rb_str_new(buffer + *offset, length);
 
   *offset += length;
 
-  return ary;
+  return str;
 }
 
 static VALUE decode_reference(char *buffer, size_t buffer_size,
