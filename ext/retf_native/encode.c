@@ -51,7 +51,7 @@ static inline void ensure_str_extra_capacity(VALUE str, size_t required) {
   size_t len = RSTRING_LEN(str);
 
   if (len + required < cap) {
-    rb_str_modify_expand(str, len);
+    rb_str_modify_expand(str, required);
   }
 }
 
@@ -298,8 +298,6 @@ static VALUE encode_array(VALUE self, VALUE str_buffer) {
   // 106 is the empty list tag
   // properly formatted lists should end with an empty list
   return rb_str_cat(str_buffer, "\x6A", 1);
-
-  return str_buffer;
 }
 
 VALUE retf_encode_map(int argc, VALUE *argv, VALUE self) {

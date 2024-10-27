@@ -11,6 +11,8 @@ LONG_ARRAY = ([123, 'abc', { a: :b, c: [(2**63) - 1], d: 'asdfed' * 10 }] * 10).
 
 LONG_STRING = 'abc' * 100
 
+LONG_INT_ARRY = (1..100).to_a.freeze
+
 NESTED_HASH = { a: { b: 2 }.freeze }.freeze
 
 HASH_WITH_ARRAY = { a: [1, 2].freeze }.freeze
@@ -51,15 +53,27 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
     JSON.dump(LARGE_INTEGER_PAIR)
   end
 
-  x.report('ETF - encode long array') do
+  x.report('ETF - encode long integer array') do
+    Retf.encode(LONG_INT_ARRY)
+  end
+
+  x.report('MSGPACK - encode long integer array') do
+    MessagePack.pack(LONG_INT_ARRY)
+  end
+
+  x.report('JSON - encode long integer array') do
+    JSON.dump(LONG_INT_ARRY)
+  end
+
+  x.report('ETF - encode long mixed array') do
     Retf.encode(LONG_ARRAY)
   end
 
-  x.report('MSGPACK - encode long array') do
+  x.report('MSGPACK - encode long mixed array') do
     MessagePack.pack(LONG_ARRAY)
   end
 
-  x.report('JSON - encode long array') do
+  x.report('JSON - encode long mixed array') do
     JSON.dump(LONG_ARRAY)
   end
 
