@@ -1,4 +1,4 @@
-name: RSpec and RuboCop
+name: Test and Lint
 on:
   push:
     branches:
