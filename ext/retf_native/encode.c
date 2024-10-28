@@ -140,13 +140,13 @@ static VALUE encode_big_integer(VALUE bigint, VALUE str_buffer) {
 
   long len = 0;
 
-  while (!RTEST(rb_big_eq(bigint, INT2FIX(0)))) {
+  while (!RTEST(RETF_BIG_EQ(bigint, INT2FIX(0)))) {
     if (RB_TYPE_P(bigint, T_FIXNUM)) {
       break;
     }
 
-    char byte = FIX2INT(rb_big_and(bigint, INT2FIX(0xFF)));
-    bigint = rb_big_rshift(bigint, INT2FIX(8));
+    char byte = FIX2INT(RETF_BIG_AND(bigint, INT2FIX(0xFF)));
+    bigint = RETF_BIG_RSHIFT(bigint, INT2FIX(8));
 
     rb_str_cat(str, &byte, 1);
     len++;
@@ -394,7 +394,7 @@ static VALUE encode_atom(VALUE self, VALUE str_buffer) {
   size_t len = RSTRING_LEN(str);
   char *ptr = RSTRING_PTR(str);
 
-  if (rb_str_strlen(str) > 255) {
+  if (RETF_STR_LEN(str) > 255) {
     rb_raise(rb_eArgError,
              "atom is too long to encode, length must fit in "
              "a 32-bit unsigned integer");
@@ -425,7 +425,7 @@ VALUE retf_encode_class(int argc, VALUE *argv, VALUE self) {
 }
 
 static VALUE encode_class(VALUE self, VALUE str_buffer) {
-  VALUE name = rb_mod_name(self);
+  VALUE name = RETF_MOD_NAME(self);
 
   if (RB_NIL_P(name)) {
     rb_raise(rb_eArgError, "cannot encode an anonymous class");
@@ -438,7 +438,7 @@ static VALUE encode_class(VALUE self, VALUE str_buffer) {
                                 rb_str_new_lit("::"), rb_str_new_lit("."));
 
   // 7 is the length of "Elixir."
-  if (7 + rb_str_strlen(elixirized) > 255) {
+  if (7 + RETF_STR_LEN(elixirized) > 255) {
     rb_raise(rb_eArgError,
              "class name is too long to encode, must be no "
              "greater than 255 characters");
