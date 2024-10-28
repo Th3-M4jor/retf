@@ -16,12 +16,7 @@ jobs:
         ruby: 
          - '3.2'
          - '3.3'
-          # Removed TruffleRuby due to
-          # a symbol not being defined error
-          # see https://github.com/oracle/truffleruby/issues/3697
-          #
-          # TODO: Uncomment when resolved
-         # - truffleruby
+         - truffleruby
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
@@ -38,12 +33,7 @@ jobs:
           ruby: 
            - '3.2'
            - '3.3'
-            # Removed TruffleRuby due to
-            # a symbol not being defined error
-            # see https://github.com/oracle/truffleruby/issues/3697
-            #
-            # TODO: Uncomment when resolved
-           # - truffleruby
+           - truffleruby
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
