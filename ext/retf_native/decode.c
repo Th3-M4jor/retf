@@ -46,14 +46,14 @@ VALUE retf_decode(VALUE self, VALUE str, VALUE skip_version_check) {
 static void do_version_check(char *buffer, size_t buffer_size, size_t *offset) {
   unsigned char version = decode_byte(buffer, buffer_size, offset);
 
-  if (version != 131) {
+  if (RB_UNLIKELY(version != 131)) {
     rb_raise(rb_eArgError, "malformed ETF");
   }
 }
 
 static unsigned char decode_byte(char *buffer, size_t buffer_size,
                                  size_t *offset) {
-  if (*offset >= buffer_size) {
+  if (RB_UNLIKELY(*offset >= buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -64,7 +64,7 @@ static unsigned char decode_byte(char *buffer, size_t buffer_size,
 }
 
 static uint16_t decode_short(char *buffer, size_t buffer_size, size_t *offset) {
-  if (*offset + 2 > buffer_size) {
+  if (RB_UNLIKELY(*offset + 2 > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -81,7 +81,7 @@ static uint16_t decode_short(char *buffer, size_t buffer_size, size_t *offset) {
 }
 
 static uint32_t decode_int(char *buffer, size_t buffer_size, size_t *offset) {
-  if (*offset + 4 > buffer_size) {
+  if (RB_UNLIKELY(*offset + 4 > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -99,7 +99,7 @@ static uint32_t decode_int(char *buffer, size_t buffer_size, size_t *offset) {
 
 static int32_t decode_signed_int(char *buffer, size_t buffer_size,
                                  size_t *offset) {
-  if (*offset + 4 > buffer_size) {
+  if (RB_UNLIKELY(*offset + 4 > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -116,7 +116,7 @@ static int32_t decode_signed_int(char *buffer, size_t buffer_size,
 }
 
 static VALUE decode_float(char *buffer, size_t buffer_size, size_t *offset) {
-  if (*offset + 8 > buffer_size) {
+  if (RB_UNLIKELY(*offset + 8 > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -139,7 +139,7 @@ static VALUE decode_small_atom(char *buffer, size_t buffer_size,
                                size_t *offset) {
   unsigned char length = decode_byte(buffer, buffer_size, offset);
 
-  if (*offset + length > buffer_size) {
+  if (RB_UNLIKELY(*offset + length > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -162,7 +162,7 @@ static VALUE decode_small_atom(char *buffer, size_t buffer_size,
 static VALUE decode_atom(char *buffer, size_t buffer_size, size_t *offset) {
   uint_least16_t length = decode_short(buffer, buffer_size, offset);
 
-  if (*offset + length > buffer_size) {
+  if (RB_UNLIKELY(*offset + length > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -231,7 +231,7 @@ static VALUE symbolize_string(VALUE str) {
 static VALUE decode_binary(char *buffer, size_t buffer_size, size_t *offset) {
   uint32_t length = decode_int(buffer, buffer_size, offset);
 
-  if (*offset + length > buffer_size) {
+  if (RB_UNLIKELY(*offset + length > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -298,7 +298,7 @@ static VALUE decode_erl_string(char *buffer, size_t buffer_size,
                                size_t *offset) {
   uint16_t length = decode_short(buffer, buffer_size, offset);
 
-  if (*offset + length > buffer_size) {
+  if (RB_UNLIKELY(*offset + length > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -324,8 +324,8 @@ static VALUE decode_reference(char *buffer, size_t buffer_size,
     rb_ary_push(id, INT2FIX(next_id));
   }
 
-  return rb_funcall(reference_class, rb_intern("new"), 3, INT2FIX(creation), id,
-                    node);
+  return rb_class_new_instance(3, (VALUE[]){INT2FIX(creation), id, node},
+                        reference_class);
 }
 
 static VALUE decode_pid(char *buffer, size_t buffer_size, size_t *offset) {
@@ -336,8 +336,8 @@ static VALUE decode_pid(char *buffer, size_t buffer_size, size_t *offset) {
   uint32_t serial = decode_int(buffer, buffer_size, offset);
   uint32_t creation = decode_int(buffer, buffer_size, offset);
 
-  return rb_funcall(pid_class, rb_intern("new"), 4, INT2FIX(id),
-                    INT2FIX(serial), INT2FIX(creation), node);
+  return rb_class_new_instance(4, (VALUE[]){INT2FIX(id), INT2FIX(serial),
+                        INT2FIX(creation), node}, pid_class);
 }
 
 static VALUE decode_bit_binary(char *buffer, size_t buffer_size,
@@ -348,7 +348,7 @@ static VALUE decode_bit_binary(char *buffer, size_t buffer_size,
 
   unsigned char bits = decode_byte(buffer, buffer_size, offset);
 
-  if (*offset + size > buffer_size) {
+  if (RB_UNLIKELY(*offset + size > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -356,7 +356,8 @@ static VALUE decode_bit_binary(char *buffer, size_t buffer_size,
 
   *offset += size;
 
-  return rb_funcall(bitstring_class, rb_intern("new"), 2, str, INT2FIX(bits));
+  return rb_class_new_instance(2, (VALUE[]){str, INT2FIX(bits)},
+                        bitstring_class);
 }
 
 static VALUE decode_map(char *buffer, size_t buffer_size, size_t *offset) {
@@ -390,7 +391,7 @@ static VALUE decode_small_bigint(char *buffer, size_t buffer_size,
   unsigned char size = decode_byte(buffer, buffer_size, offset);
   unsigned char sign = decode_byte(buffer, buffer_size, offset);
 
-  if (*offset + size > buffer_size) {
+  if (RB_UNLIKELY(*offset + size > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -421,7 +422,7 @@ static VALUE decode_large_bigint(char *buffer, size_t buffer_size,
   uint32_t size = decode_int(buffer, buffer_size, offset);
   unsigned char sign = decode_byte(buffer, buffer_size, offset);
 
-  if (*offset + size > buffer_size) {
+  if (RB_UNLIKELY(*offset + size > buffer_size)) {
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
@@ -457,7 +458,7 @@ static VALUE decompress_data(char *buffer, size_t buffer_size, size_t *offset) {
 
   size_t new_buffer_size = RSTRING_LEN(uncompressed_data);
 
-  if (new_buffer_size != uncompressed_size) {
+  if (RB_UNLIKELY(new_buffer_size != uncompressed_size)) {
     rb_raise(rb_eArgError,
              "Decompressed data size does not match expected size");
   }
