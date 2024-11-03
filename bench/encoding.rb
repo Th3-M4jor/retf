@@ -11,7 +11,7 @@ LONG_ARRAY = ([123, 'abc', { a: :b, c: [(2**63) - 1], d: 'asdfed' * 10 }] * 10).
 
 LONG_STRING = 'abc' * 100
 
-LONG_INT_ARRY = (1..100).to_a.freeze
+LONG_INT_ARRY = (150..350).to_a.freeze
 
 NESTED_HASH = { a: { b: 2 }.freeze }.freeze
 

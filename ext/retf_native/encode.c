@@ -270,7 +270,7 @@ VALUE retf_encode_array(int argc, VALUE *argv, VALUE self) {
 static VALUE encode_array(VALUE self, VALUE str_buffer) {
   long len = rb_array_len(self);
 
-  if (len > RETF_USIZE_MAX) {
+  if (RB_UNLIKELY(len > RETF_USIZE_MAX)) {
     rb_raise(rb_eArgError,
              "array is too long to encode, length must fit "
              "in a 32-bit unsigned integer");
@@ -307,7 +307,7 @@ VALUE retf_encode_map(int argc, VALUE *argv, VALUE self) {
 static VALUE encode_map(VALUE self, VALUE str_buffer) {
   size_t size = RHASH_SIZE(self);
 
-  if (size > RETF_USIZE_MAX) {
+  if (RB_UNLIKELY(size > RETF_USIZE_MAX)) {
     rb_raise(rb_eArgError,
              "map is too large to encode, size must fit in a "
              "32-bit unsigned integer");

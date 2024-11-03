@@ -386,6 +386,58 @@ static VALUE decode_map(char *buffer, size_t buffer_size, size_t *offset) {
   return map;
 }
 
+typedef struct {
+  unsigned long* bytes;
+  size_t bytes_len;
+  unsigned char sign;
+} bigint_unpack_data;
+
+#ifdef HAVE_RB_BIG_UNPACK
+static VALUE unpack_bigint(VALUE data) {
+  bigint_unpack_data* unpack_data = (bigint_unpack_data*)data;
+
+  VALUE num = rb_big_unpack(unpack_data->bytes, unpack_data->bytes_len);
+
+  if (unpack_data->sign != 0) {
+    num = rb_funcall(num, rb_intern("*"), 1, INT2FIX(-1));
+  }
+
+  return num;
+}
+#else
+static VALUE unpack_bigint(VALUE data) {
+  bigint_unpack_data* unpack_data = (bigint_unpack_data*)data;
+
+  VALUE num = INT2FIX(0);
+  VALUE two_fifty_six = INT2FIX(256);
+
+  unsigned char* buffer = (unsigned char*)unpack_data->bytes;
+  size_t size = unpack_data->bytes_len * sizeof(unsigned long);
+
+  for (size_t i = 0; i < size; i++) {
+    unsigned char b = buffer[i];
+    VALUE byte_value = INT2FIX(b);
+    VALUE idx = INT2FIX(i);
+
+    VALUE powed = rb_funcall(two_fifty_six, rb_intern("**"), 1, idx);
+    VALUE shifted = rb_funcall(byte_value, rb_intern("*"), 1, powed);
+    num = rb_funcall(num, rb_intern("+"), 1, shifted);
+  }
+
+  if (unpack_data->sign != 0) {
+    num = rb_funcall(num, rb_intern("*"), 1, INT2FIX(-1));
+  }
+
+  return num;
+}
+#endif
+
+// This is a callback function for rb_ensure
+static VALUE free_unpack_data(VALUE data) {
+  xfree((void*) data);
+  return Qnil;
+}
+
 static VALUE decode_small_bigint(char *buffer, size_t buffer_size,
                                  size_t *offset) {
   unsigned char size = decode_byte(buffer, buffer_size, offset);
@@ -395,26 +447,19 @@ static VALUE decode_small_bigint(char *buffer, size_t buffer_size,
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
-  VALUE num = INT2FIX(0);
-  VALUE two_fifty_six = INT2FIX(256);
+  // The rb_big_unpack function expects an array of longs
+  // but ETF bigints are stored as an array of bytes.
+  size_t bytes_needed = size / sizeof(unsigned long) + (size % sizeof(unsigned long) != 0);
 
-  for (unsigned char i = 0; i < size; i++) {
-    unsigned char b = buffer[*offset + i];
-    VALUE byte_value = INT2FIX(b);
-    VALUE idx = INT2FIX(i);
+  unsigned long* bytes = xcalloc(bytes_needed, sizeof(unsigned long));
 
-    VALUE powed = rb_funcall(two_fifty_six, rb_intern("**"), 1, idx);
-    VALUE shifted = rb_funcall(byte_value, rb_intern("*"), 1, powed);
-    num = rb_funcall(num, rb_intern("+"), 1, shifted);
-  }
+  memcpy(bytes, buffer + *offset, size);
 
   *offset += size;
 
-  if (sign != 0) {
-    num = rb_funcall(num, rb_intern("*"), 1, INT2FIX(-1));
-  }
+  bigint_unpack_data data = {bytes, bytes_needed, sign};
 
-  return num;
+  return rb_ensure(unpack_bigint, (VALUE)&data, free_unpack_data, (VALUE)bytes);
 }
 
 static VALUE decode_large_bigint(char *buffer, size_t buffer_size,
@@ -426,26 +471,19 @@ static VALUE decode_large_bigint(char *buffer, size_t buffer_size,
     rb_raise(rb_eArgError, "Unexpected end of input");
   }
 
-  VALUE num = INT2FIX(0);
-  VALUE two_fifty_six = INT2FIX(256);
+ // The rb_big_unpack function expects an array of longs
+  // but ETF bigints are stored as an array of bytes.
+  size_t bytes_needed = size / sizeof(unsigned long) + (size % sizeof(unsigned long) != 0);
 
-  for (uint32_t i = 0; i < size; i++) {
-    unsigned char b = buffer[*offset + i];
-    VALUE byte_value = INT2FIX(b);
-    VALUE idx = INT2FIX(i);
+  unsigned long* bytes = xcalloc(bytes_needed, sizeof(unsigned long));
 
-    VALUE powed = rb_funcall(two_fifty_six, rb_intern("**"), 1, idx);
-    VALUE shifted = rb_funcall(byte_value, rb_intern("*"), 1, powed);
-    num = rb_funcall(num, rb_intern("+"), 1, shifted);
-  }
+  memcpy(bytes, buffer + *offset, size);
 
   *offset += size;
 
-  if (sign != 0) {
-    num = rb_funcall(num, rb_intern("*"), 1, INT2FIX(-1));
-  }
+  bigint_unpack_data data = {bytes, bytes_needed, sign};
 
-  return num;
+  return rb_ensure(unpack_bigint, (VALUE)&data, free_unpack_data, (VALUE)bytes);
 }
 
 static VALUE decompress_data(char *buffer, size_t buffer_size, size_t *offset) {
