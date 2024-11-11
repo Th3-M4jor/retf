@@ -199,26 +199,23 @@ static VALUE encode_fixed_integer(long val, VALUE str_buffer) {
 
   long abs_val = labs(val);
 
-  // going with a length of 11 bytes
-  // since we likely won't be encoding
-  // anything larger than that for the
-  // most part.
-  VALUE str = rb_str_buf_new(11);
+  // Instead of shifting the bits to find the number of bytes
+  // we can just use log2 to find the number of bits
+  // and then divide by 8 to get the number of bytes
+  // rounding up.
+  long count = (long) ceil(log2(abs_val));
+  char bytes = count / 8 + (count % 8 == 0 ? 0 : 1);
 
-  char len = 0;
-
-  while (abs_val > 0) {
-    char byte = abs_val & 0xFF;
-    abs_val >>= 8;
-
-    rb_str_cat(str, &byte, 1);
-    len++;
-  }
+  // Since the bytes go least significant first
+  // we need to convert the number to little endian.
+  uint64_t encoded = htole64(abs_val);
 
   rb_str_cat(str_buffer, "\x6E", 1);
-  rb_str_cat(str_buffer, &len, 1);
+  rb_str_cat(str_buffer, &bytes, 1);
   rb_str_cat(str_buffer, &sign, 1);
-  return rb_str_concat(str_buffer, str);
+
+  // Only write the bytes we need rather than the full 8
+  return rb_str_cat(str_buffer, (char *)&encoded, bytes);
 }
 
 VALUE retf_encode_float(int argc, VALUE *argv, VALUE self) {
