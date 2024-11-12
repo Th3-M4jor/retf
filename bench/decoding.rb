@@ -189,7 +189,8 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
     Retf.decode(ETF_HASH_WITH_MANY_ELEMENTS)
   end
 
-  x.report("ETF - decode hash with many elements compressed - #{ETF_HASH_WITH_MANY_ELEMENTS_COMPRESSED.bytesize} bytes") do
+  x.report('ETF - decode hash with many elements compressed - ' \
+           "#{ETF_HASH_WITH_MANY_ELEMENTS_COMPRESSED.bytesize} bytes") do
     Retf.decode(ETF_HASH_WITH_MANY_ELEMENTS_COMPRESSED)
   end
 
