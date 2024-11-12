@@ -46,6 +46,17 @@
 #define RETF_BIG_RSHIFT(a, b) rb_funcall(a, rb_intern(">>"), 1, b)
 #endif
 
+#ifndef HAVE_RB_HASH_BULK_INSERT
+// All versions of TruffleRuby that we want to support
+// do not have rb_hash_bulk_insert yet.
+void rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash) {
+    long i;
+    for (i = 0; i < argc; i += 2) {
+        rb_hash_aset(hash, argv[i], argv[i + 1]);
+    }
+}
+#endif
+
 void retf_constants_setup(VALUE mRetf);
 
 // Classes

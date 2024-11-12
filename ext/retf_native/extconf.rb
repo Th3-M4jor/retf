@@ -12,6 +12,7 @@ have_func('rb_big_eq') # truffleruby
 have_func('rb_big_and') # truffleruby
 have_func('rb_big_rshift') # truffleruby
 have_func('rb_big_unpack') # truffleruby
+have_func('rb_hash_bulk_insert') # truffleruby
 
 append_cflags('-flto')
 create_makefile('retf_native')

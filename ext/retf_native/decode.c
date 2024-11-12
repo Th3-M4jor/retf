@@ -350,17 +350,40 @@ static VALUE decode_bit_binary(decoder_state* state) {
                         bitstring_class);
 }
 
+typedef struct {
+  const uint32_t map_length;
+  VALUE* kvp_arr;
+  decoder_state* state;
+} map_unpack_data;
+
+static VALUE decode_map_inner(VALUE unpack_data) {
+  map_unpack_data* data = (map_unpack_data*) unpack_data;
+
+  VALUE map = rb_hash_new_capa(data->map_length);
+  decoder_state* state = data->state;
+
+  VALUE* kvp_arr = data->kvp_arr;
+
+  size_t kvp_arr_len = data->map_length * 2;
+
+  for (uint32_t i = 0; i < kvp_arr_len; i += 2) {
+    kvp_arr[i] = decode_term(state);
+    kvp_arr[i + 1] = decode_term(state);
+  }
+
+  rb_hash_bulk_insert(kvp_arr_len, kvp_arr, map);
+
+  return map;
+}
+
 static VALUE decode_map(decoder_state* state) {
   uint32_t length = decode_int(state);
 
-  VALUE map = rb_hash_new_capa(length);
+  VALUE* kvp_arr = xmalloc2(length * 2, sizeof(VALUE));
 
-  for (uint32_t i = 0; i < length; i++) {
-    VALUE key = decode_term(state);
-    VALUE value = decode_term(state);
+  map_unpack_data data = {length, kvp_arr, state};
 
-    rb_hash_aset(map, key, value);
-  }
+  VALUE map =  rb_ensure(decode_map_inner, (VALUE)&data, free_unpack_data, (VALUE)kvp_arr);
 
   VALUE struct_sym = retf_constants_get_struct();
 
@@ -494,7 +517,11 @@ static VALUE decompress_data(decoder_state* state) {
 
   decoder_state new_state = {new_buffer, new_buffer_size, new_offset};
 
-  return decode_term(&new_state);
+  VALUE term = decode_term(&new_state);
+
+  RB_GC_GUARD(uncompressed_data);
+
+  return term;
 }
 
 static VALUE decode_term(decoder_state* state) {

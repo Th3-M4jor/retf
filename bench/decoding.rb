@@ -10,36 +10,42 @@ LARGE_INTEGER_PAIR = [(2**32) - 1, (2**63) - 1].freeze
 JSON_LARGE_INTEGER_PAIR = LARGE_INTEGER_PAIR.to_json.freeze
 MSG_PACK_LARGE_INTEGER_PAIR = MessagePack.pack(LARGE_INTEGER_PAIR).freeze
 ETF_LARGE_INTEGER_PAIR = Retf.encode(LARGE_INTEGER_PAIR).freeze
+ETF_LARGE_INTEGER_PAIR_COMPRESSED = Retf.encode(LARGE_INTEGER_PAIR, compress: true).freeze
 
 LONG_ARRAY = ([123, 'abc', { a: :b, c: [(2**63) - 1], d: 'asdfed' * 10 }] * 10).freeze
 
 JSON_LONG_ARRAY = LONG_ARRAY.to_json.freeze
 MSG_PACK_LONG_ARRAY = MessagePack.pack(LONG_ARRAY).freeze
 ETF_LONG_ARRAY = Retf.encode(LONG_ARRAY).freeze
+ETF_LONG_ARRAY_COMPRESSED = Retf.encode(LONG_ARRAY, compress: true).freeze
 
 LONG_STRING = 'abc' * 100
 
 JSON_LONG_STRING = LONG_STRING.to_json.freeze
 MSG_PACK_LONG_STRING = MessagePack.pack(LONG_STRING).freeze
 ETF_LONG_STRING = Retf.encode(LONG_STRING).freeze
+ETF_LONG_STRING_COMPRESSED = Retf.encode(LONG_STRING, compress: true).freeze
 
 LONG_INT_ARRY = (150..350).to_a.freeze
 
 JSON_LONG_INT_ARRY = LONG_INT_ARRY.to_json.freeze
 MSG_PACK_LONG_INT_ARRY = MessagePack.pack(LONG_INT_ARRY).freeze
 ETF_LONG_INT_ARRY = Retf.encode(LONG_INT_ARRY).freeze
+ETF_LONG_INT_ARRY_COMPRESSED = Retf.encode(LONG_INT_ARRY, compress: true).freeze
 
 NESTED_HASH = { a: { b: 2 }.freeze }.freeze
 
 JSON_NESTED_HASH = NESTED_HASH.to_json.freeze
 MSG_PACK_NESTED_HASH = MessagePack.pack(NESTED_HASH).freeze
 ETF_NESTED_HASH = Retf.encode(NESTED_HASH).freeze
+ETF_NESTED_HASH_COMPRESSED = Retf.encode(NESTED_HASH, compress: true).freeze
 
 HASH_WITH_ARRAY = { a: [1, 2].freeze }.freeze
 
 JSON_HASH_WITH_ARRAY = HASH_WITH_ARRAY.to_json.freeze
 MSG_PACK_HASH_WITH_ARRAY = MessagePack.pack(HASH_WITH_ARRAY).freeze
 ETF_HASH_WITH_ARRAY = Retf.encode(HASH_WITH_ARRAY).freeze
+ETF_HASH_WITH_ARRAY_COMPRESSED = Retf.encode(HASH_WITH_ARRAY, compress: true).freeze
 
 HASH_WITH_MANY_ELEMENTS = {
   a: 1,
@@ -53,6 +59,7 @@ HASH_WITH_MANY_ELEMENTS = {
 JSON_HASH_WITH_MANY_ELEMENTS = HASH_WITH_MANY_ELEMENTS.to_json.freeze
 MSG_PACK_HASH_WITH_MANY_ELEMENTS = MessagePack.pack(HASH_WITH_MANY_ELEMENTS).freeze
 ETF_HASH_WITH_MANY_ELEMENTS = Retf.encode(HASH_WITH_MANY_ELEMENTS).freeze
+ETF_HASH_WITH_MANY_ELEMENTS_COMPRESSED = Retf.encode(HASH_WITH_MANY_ELEMENTS, compress: true).freeze
 
 LARGE_HASH = {
   foo: LONG_ARRAY,
@@ -65,6 +72,7 @@ LARGE_HASH = {
 JSON_LARGE_HASH = LARGE_HASH.to_json.freeze
 MSG_PACK_LARGE_HASH = MessagePack.pack(LARGE_HASH).freeze
 ETF_LARGE_HASH = Retf.encode(LARGE_HASH).freeze
+ETF_LARGE_HASH_COMPRESSED = Retf.encode(LARGE_HASH, compress: true).freeze
 
 RubyVM::YJIT.enable
 
@@ -85,6 +93,10 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
     Retf.decode(ETF_LARGE_INTEGER_PAIR)
   end
 
+  x.report("ETF - decode large integer pair compressed - #{ETF_LARGE_INTEGER_PAIR_COMPRESSED.bytesize} bytes") do
+    Retf.decode(ETF_LARGE_INTEGER_PAIR_COMPRESSED)
+  end
+
   x.report("JSON - decode long integer array - #{JSON_LONG_INT_ARRY.bytesize} bytes") do
     JSON.parse(JSON_LONG_INT_ARRY)
   end
@@ -95,6 +107,10 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
 
   x.report("ETF - decode long integer array - #{ETF_LONG_INT_ARRY.bytesize} bytes") do
     Retf.decode(ETF_LONG_INT_ARRY)
+  end
+
+  x.report("ETF - decode long integer array compressed - #{ETF_LONG_INT_ARRY_COMPRESSED.bytesize} bytes") do
+    Retf.decode(ETF_LONG_INT_ARRY_COMPRESSED)
   end
 
   x.report("JSON - decode long string - #{JSON_LONG_STRING.bytesize} bytes") do
@@ -109,6 +125,10 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
     Retf.decode(ETF_LONG_STRING)
   end
 
+  x.report("ETF - decode long string compressed - #{ETF_LONG_STRING_COMPRESSED.bytesize} bytes") do
+    Retf.decode(ETF_LONG_STRING_COMPRESSED)
+  end
+
   x.report("JSON - decode long array - #{JSON_LONG_ARRAY.bytesize} bytes") do
     JSON.parse(JSON_LONG_ARRAY)
   end
@@ -119,6 +139,10 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
 
   x.report("ETF - decode long array - #{ETF_LONG_ARRAY.bytesize} bytes") do
     Retf.decode(ETF_LONG_ARRAY)
+  end
+
+  x.report("ETF - decode long array compressed - #{ETF_LONG_ARRAY_COMPRESSED.bytesize} bytes") do
+    Retf.decode(ETF_LONG_ARRAY_COMPRESSED)
   end
 
   x.report("JSON - decode nested hash - #{JSON_NESTED_HASH.bytesize} bytes") do
@@ -133,6 +157,10 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
     Retf.decode(ETF_NESTED_HASH)
   end
 
+  x.report("ETF - decode nested hash compressed - #{ETF_NESTED_HASH_COMPRESSED.bytesize} bytes") do
+    Retf.decode(ETF_NESTED_HASH_COMPRESSED)
+  end
+
   x.report("JSON - decode hash with array - #{JSON_HASH_WITH_ARRAY.bytesize} bytes") do
     JSON.parse(JSON_HASH_WITH_ARRAY)
   end
@@ -143,6 +171,10 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
 
   x.report("ETF - decode hash with array - #{ETF_HASH_WITH_ARRAY.bytesize} bytes") do
     Retf.decode(ETF_HASH_WITH_ARRAY)
+  end
+
+  x.report("ETF - decode hash with array compressed - #{ETF_HASH_WITH_ARRAY_COMPRESSED.bytesize} bytes") do
+    Retf.decode(ETF_HASH_WITH_ARRAY_COMPRESSED)
   end
 
   x.report("JSON - decode hash with many elements - #{JSON_HASH_WITH_MANY_ELEMENTS.bytesize} bytes") do
@@ -157,6 +189,10 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
     Retf.decode(ETF_HASH_WITH_MANY_ELEMENTS)
   end
 
+  x.report("ETF - decode hash with many elements compressed - #{ETF_HASH_WITH_MANY_ELEMENTS_COMPRESSED.bytesize} bytes") do
+    Retf.decode(ETF_HASH_WITH_MANY_ELEMENTS_COMPRESSED)
+  end
+
   x.report("JSON - decode large hash - #{JSON_LARGE_HASH.bytesize} bytes") do
     JSON.parse(JSON_LARGE_HASH)
   end
@@ -167,5 +203,9 @@ Benchmark.ips do |x| # rubocop:disable Metrics/BlockLength
 
   x.report("ETF - decode large hash - #{ETF_LARGE_HASH.bytesize} bytes") do
     Retf.decode(ETF_LARGE_HASH)
+  end
+
+  x.report("ETF - decode large hash compressed - #{ETF_LARGE_HASH_COMPRESSED.bytesize} bytes") do
+    Retf.decode(ETF_LARGE_HASH_COMPRESSED)
   end
 end
