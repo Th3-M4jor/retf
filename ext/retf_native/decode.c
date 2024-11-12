@@ -25,6 +25,19 @@ static VALUE decode_term(decoder_state* state);
 // callback for rb_ensure to free an allocated temporary buffer
 static VALUE free_unpack_data(VALUE data);
 
+#ifndef HAVE_RB_HASH_BULK_INSERT
+// For TruffleRuby
+void rb_hash_bulk_insert(long count, const VALUE *pairs, VALUE hash) {
+    long index = 0;
+    while (index < count) {
+        VALUE name = pairs[index++];
+        VALUE value = pairs[index++];
+        rb_hash_aset(hash, name, value);
+    }
+    RB_GC_GUARD(hash);
+}
+#endif
+
 VALUE retf_decode(VALUE self, VALUE str, VALUE skip_version_check) {
   Check_Type(str, T_STRING);
 
