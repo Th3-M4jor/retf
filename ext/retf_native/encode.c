@@ -21,11 +21,10 @@ static inline VALUE scan_and_call(int argc, VALUE *argv, VALUE self,
                            VALUE (*func)(VALUE self, VALUE str_buffer)) {
   VALUE str_buffer;
 
-  rb_scan_args(argc, argv, "01", &str_buffer);
-
   if (argc == 0) {
     str_buffer = rb_str_buf_new(10);
   } else {
+    str_buffer = argv[0];
     Check_Type(str_buffer, T_STRING);
   }
 
@@ -33,7 +32,7 @@ static inline VALUE scan_and_call(int argc, VALUE *argv, VALUE self,
 }
 
 VALUE retf_encode(VALUE self, VALUE to_encode, VALUE compress) {
-  VALUE str_buffer = rb_str_buf_new(100);
+  VALUE str_buffer = rb_str_buf_new(1024);
 
   if (RTEST(compress)) {
     encode_term(to_encode, str_buffer);
@@ -62,6 +61,7 @@ static VALUE compress_data(VALUE str_buffer) {
     rb_raise(rb_eArgError,
              "encoded data is too large length must fit in a "
              "32-bit unsigned integer");
+    return Qundef;
   }
 
   uint32_t nlen = htobe32(len);
@@ -109,7 +109,7 @@ static VALUE encode_term(VALUE term, VALUE str_buffer) {
       rb_raise(rb_eArgError, "unsupported type for encoding");
   }
 
-  return Qnil;
+  return Qundef;
 }
 
 VALUE retf_encode_integer(int argc, VALUE *argv, VALUE self) {
@@ -227,6 +227,7 @@ static VALUE encode_float(VALUE self, VALUE str_buffer) {
 
   if (!isfinite(to_encode)) {
     rb_raise(rb_eArgError, "only floats with a finite value can be encoded");
+    return Qundef;
   }
 
   rb_str_cat(str_buffer, "\x46", 1);
@@ -249,6 +250,7 @@ static VALUE encode_string(VALUE self, VALUE str_buffer) {
     rb_raise(rb_eArgError,
              "string is too long to encode, bytesize must "
              "fit in a 32-bit unsigned integer");
+    return Qundef;
   }
 
   ensure_str_extra_capacity(str_buffer, 5 + len);
@@ -271,6 +273,7 @@ static VALUE encode_array(VALUE self, VALUE str_buffer) {
     rb_raise(rb_eArgError,
              "array is too long to encode, length must fit "
              "in a 32-bit unsigned integer");
+    return Qundef;
   }
 
   if (len == 0) {
@@ -308,6 +311,7 @@ static VALUE encode_map(VALUE self, VALUE str_buffer) {
     rb_raise(rb_eArgError,
              "map is too large to encode, size must fit in a "
              "32-bit unsigned integer");
+    return Qundef;
   }
 
   ensure_str_extra_capacity(str_buffer, 5 + (size * 2));
@@ -343,6 +347,7 @@ static VALUE encode_object(VALUE self, VALUE str_buffer) {
 
   if (!rb_respond_to(self, as_etf_sym)) {
     rb_raise(rb_eArgError, "object does not respond to `as_etf`");
+    return Qundef;
   }
 
   VALUE hash_to_encode = rb_funcall(self, as_etf_sym, 0);
@@ -361,6 +366,7 @@ static VALUE encode_object(VALUE self, VALUE str_buffer) {
     rb_raise(rb_eArgError,
              "map is too large to encode, size must fit in a "
              "32-bit unsigned integer");
+    return Qundef;
   }
 
   ensure_str_extra_capacity(str_buffer, 5 + (size * 2));
@@ -395,6 +401,7 @@ static VALUE encode_atom(VALUE self, VALUE str_buffer) {
     rb_raise(rb_eArgError,
              "atom is too long to encode, length must fit in "
              "a 32-bit unsigned integer");
+    return Qundef;
   }
 
   // This may seen a bit weird, but that's because atoms can be
@@ -426,6 +433,7 @@ static VALUE encode_class(VALUE self, VALUE str_buffer) {
 
   if (RB_NIL_P(name)) {
     rb_raise(rb_eArgError, "cannot encode an anonymous class");
+    return Qundef;
   }
 
   // Replace the double colon with a period
@@ -439,6 +447,7 @@ static VALUE encode_class(VALUE self, VALUE str_buffer) {
     rb_raise(rb_eArgError,
              "class name is too long to encode, must be no "
              "greater than 255 characters");
+    return Qundef;
   }
 
   // 7 is the length of "Elixir."
